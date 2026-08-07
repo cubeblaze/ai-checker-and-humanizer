@@ -93,6 +93,12 @@ button,input,textarea{font:inherit; color:inherit}
 .tab.on{background:var(--surface); color:var(--tx); box-shadow:var(--sh-sm)}
 :root[data-theme="dark"] .tab.on{background:var(--surface-3)}
 
+/* ---------- header auth actions ---------- */
+/* Log In / Create Account in the navbar. Placeholder-only for now — see the
+   TODO comments next to their click handlers near the end of <body>. */
+.auth-actions{display:flex; gap:8px; flex:0 0 auto}
+.btn.sm{padding:7px 13px; font-size:12.75px}
+
 /* ---------- theme toggle switch ---------- */
 .theme-switch{appearance:none; border:1px solid var(--line); background:var(--surface-2);
   width:50px; height:28px; border-radius:999px; position:relative; cursor:pointer; padding:0;
@@ -116,14 +122,17 @@ button,input,textarea{font:inherit; color:inherit}
 @media (max-width:1000px){ .grid{grid-template-columns:minmax(0,1fr)} .appbar-in{padding:0 16px} .wrap{padding:18px 16px 56px} }
 @media (max-width:620px){
   .brand-sub{display:none}
-  .appbar-in{gap:12px; height:56px}
-  .tab{padding:7px 12px; font-size:13px}
+  .brand-name{display:none}
+  .appbar-in{gap:8px; height:56px}
+  .tab{padding:7px 10px; font-size:12.5px}
+  #btnLoginNav{display:none}
+  .hero h1{font-size:26px}
 }
 @media (max-width:430px){
-  .brand-name{display:none}
   .ba{grid-template-columns:1fr 1fr 1fr; gap:6px}
   .ba b{font-size:20px}
   .btn{padding:9px 13px; font-size:13px}
+  .auth-actions .btn{padding:7px 11px; font-size:12px}
 }
 .stack{display:grid; gap:20px; align-content:start}
 
@@ -150,6 +159,7 @@ textarea{width:100%; min-height:320px; resize:vertical; background:var(--surface
   outline:none; transition:border-color .15s, box-shadow .15s; font-size:14.5px}
 textarea::placeholder{color:var(--tx-3)}
 textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accent-soft); background:var(--surface)}
+textarea.dragover{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accent-soft); background:var(--accent-soft)}
 .row{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-top:13px}
 .spacer{flex:1}
 .count{font-size:12.5px; color:var(--tx-3); font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -241,6 +251,54 @@ label.chk input{margin:2px 0 0; accent-color:var(--accent); width:15px; height:1
 label.chk span{font-weight:550}
 label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-height:1.45; font-weight:400; margin-top:2px}
 
+/* ---------- home dashboard ---------- */
+.hero{text-align:center; padding:44px 12px 6px; display:grid; gap:14px; justify-items:center}
+.hero h1{font-size:32px; line-height:1.18; max-width:620px}
+.hero p{font-size:15px; color:var(--tx-2); max-width:540px; line-height:1.65}
+
+.section-lab{font-size:12px; text-transform:uppercase; letter-spacing:.075em; color:var(--tx-3);
+  font-weight:700; margin:0 0 13px}
+
+.action-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:30px 0}
+@media (max-width:900px){ .action-grid{grid-template-columns:1fr} }
+.action-card{padding:24px 22px 22px; display:flex; flex-direction:column; gap:11px; text-align:left;
+  transition:transform .18s cubic-bezier(.4,0,.2,1), box-shadow .18s ease, var(--t-theme)}
+.action-card:hover{transform:translateY(-3px); box-shadow:var(--sh-lg)}
+.action-icon{width:42px; height:42px; border-radius:11px; display:grid; place-items:center;
+  background:var(--accent-soft); color:var(--accent); flex:0 0 auto}
+.action-icon svg{width:21px; height:21px}
+.action-card h3{font-size:16px}
+.action-card p{font-size:13px; color:var(--tx-2); line-height:1.55; flex:1}
+
+.acct-card{display:flex; align-items:center; gap:20px; padding:22px 24px; margin:6px 0 34px; flex-wrap:wrap;
+  transition:var(--t-theme)}
+.acct-icon{width:52px; height:52px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line);
+  display:grid; place-items:center; color:var(--tx-3); flex:0 0 auto}
+.acct-icon svg{width:24px; height:24px}
+.acct-copy{flex:1 1 260px; min-width:220px}
+.acct-copy h3{font-size:15px; margin-bottom:4px}
+.acct-copy p{font-size:12.75px; color:var(--tx-2); line-height:1.5}
+.acct-actions{display:flex; gap:10px; flex:0 0 auto}
+
+.future-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:13px; margin-bottom:8px}
+@media (max-width:900px){ .future-grid{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:480px){ .future-grid{grid-template-columns:1fr} }
+.future-card{padding:17px; display:flex; flex-direction:column; gap:9px; transition:var(--t-theme)}
+.future-icon{width:32px; height:32px; border-radius:9px; background:var(--surface-2); color:var(--tx-3);
+  display:grid; place-items:center}
+.future-icon svg{width:16px; height:16px}
+.future-card h4{font-size:13.25px; font-weight:650}
+.future-card p{font-size:11.75px; color:var(--tx-3); line-height:1.5; flex:1}
+.badge-soon{justify-self:start; align-self:flex-start; font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--accent); background:var(--accent-soft); padding:3px 9px; border-radius:99px}
+
+/* placeholder-page toast — feedback for not-yet-wired buttons (auth, writing analysis) */
+.toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(8px);
+  background:var(--tx); color:var(--bg); font-size:13px; font-weight:600; padding:10px 20px;
+  border-radius:99px; box-shadow:var(--sh-lg); opacity:0; pointer-events:none; z-index:200;
+  transition:opacity .22s ease, transform .22s ease; white-space:nowrap}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
 /* ---------- misc ---------- */
 .note{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
   padding:15px 17px; font-size:12.5px; color:var(--tx-2); line-height:1.6; box-shadow:var(--sh-sm)}
@@ -293,9 +351,14 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
       </div>
     </div>
     <nav class="tabs">
-      <button class="tab on" id="tabDetect">Detector</button>
+      <button class="tab on" id="tabHome">Home</button>
+      <button class="tab" id="tabDetect">Detector</button>
       <button class="tab" id="tabHuman">Humanizer</button>
     </nav>
+    <div class="auth-actions">
+      <button class="btn sm" id="btnLoginNav" type="button">Log In</button>
+      <button class="btn primary sm" id="btnSignupNav" type="button">Create Account</button>
+    </div>
     <button class="theme-switch" id="themeBtn" type="button" role="switch" aria-checked="false"
             title="Toggle theme" aria-label="Toggle dark mode">
       <span class="knob">
@@ -308,26 +371,128 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 
 <div class="wrap">
 
-<div id="engineBar" class="enginebar">
+<div id="engineBar" class="enginebar hide">
   <span id="engineDot" class="dot warn"></span>
   <span id="engineTxt">Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.</span>
 </div>
 
+<!-- ============ HOME DASHBOARD ============ -->
+<div id="paneHome">
+
+  <section class="hero">
+    <h1>Analyze your writing with confidence</h1>
+    <p>Detect AI-generated content, improve your writing, and understand your text with advanced analysis tools.</p>
+  </section>
+
+  <div class="action-grid">
+    <div class="card action-card">
+      <div class="action-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg>
+      </div>
+      <h3>AI Detector</h3>
+      <p>Scan any text with two on-device detector models and see exactly which sentences read as machine-written.</p>
+      <button class="btn primary wide" data-goto="detect">Analyze Text</button>
+    </div>
+
+    <div class="card action-card">
+      <div class="action-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg>
+      </div>
+      <h3>AI Humanizer</h3>
+      <p>Rewrite the sentences a detector flags so your text keeps your voice while reading naturally.</p>
+      <button class="btn primary wide" data-goto="human">Humanize Text</button>
+    </div>
+
+    <div class="card action-card">
+      <div class="action-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg>
+      </div>
+      <h3>Writing Analysis</h3>
+      <p>A deeper read on tone, clarity and structure &mdash; beyond just an AI-likelihood score.</p>
+      <button class="btn primary wide" data-goto="writing">Analyze Writing</button>
+    </div>
+  </div>
+
+  <div class="card acct-card">
+    <div class="acct-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </div>
+    <div class="acct-copy">
+      <h3>Create an account to save your analyses</h3>
+      <p>Track your writing history and access advanced features.</p>
+    </div>
+    <div class="acct-actions">
+      <button class="btn" id="homeLoginBtn" type="button">Log In</button>
+      <button class="btn primary" id="homeSignupBtn" type="button">Create Account</button>
+    </div>
+  </div>
+
+  <p class="section-lab">Coming soon</p>
+  <div class="future-grid">
+    <div class="card future-card">
+      <div class="future-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+      <h4>Analysis History</h4>
+      <p>Every scan you run, saved and searchable.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+    <div class="card future-card">
+      <div class="future-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a1 1 0 0 1 1 1v16l-6-3.5L6 20V4a1 1 0 0 1 1-1z"/></svg></div>
+      <h4>Saved Reports</h4>
+      <p>Bookmark full detector reports to revisit later.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+    <div class="card future-card">
+      <div class="future-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      <h4>Personal Writing Profile</h4>
+      <p>A baseline of your own style, to sharpen every score.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+    <div class="card future-card">
+      <div class="future-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg></div>
+      <h4>Advanced Insights</h4>
+      <p>Trend lines across every document you've checked.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ WRITING ANALYSIS (placeholder — no route yet) ============ -->
+<div id="paneWriting" class="hide">
+  <div class="card" style="max-width:620px; margin:36px auto">
+    <div class="card-bd">
+      <div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg>
+        <div><b style="color:var(--tx)">Writing Analysis is coming soon.</b><br>Tone, clarity and structure scoring is still in the works.</div>
+      </div>
+      <div class="row" style="justify-content:center">
+        <button class="btn primary" data-goto="home" type="button">Back to home</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ DETECTOR ============ -->
-<div id="paneDetect">
+<div id="paneDetect" class="hide">
 <div class="grid">
   <div class="stack">
     <div class="card">
       <div class="card-hd"><h2>Text to analyze</h2></div>
       <div class="card-bd">
-        <textarea id="inp" placeholder="Paste an essay, article or paragraph here. 300+ words gives the most reliable score."></textarea>
+        <textarea id="inp" placeholder="Paste an essay, article or paragraph here — or drop a .txt, .docx or .pdf file. 300+ words gives the most reliable score."></textarea>
         <div class="row">
           <button class="btn primary" id="btnScan">Analyze text</button>
+          <button class="btn" id="btnUpload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg>
+            Upload file
+          </button>
           <button class="btn" id="btnSample">Load sample</button>
           <button class="btn" id="btnClear">Clear</button>
           <span class="spacer"></span>
           <span class="count" id="cnt">0 words</span>
         </div>
+        <input type="file" id="fileInput" accept=".txt,.md,.markdown,.docx,.pdf" style="display:none">
+        <p class="mini hide" id="uploadStatus" style="margin-top:9px"></p>
       </div>
     </div>
 
@@ -488,6 +653,8 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 </div>
 
 </div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* ============================================================
@@ -750,6 +917,68 @@ function sd(a){ if(a.length<2) return 0; var m=mean(a),s=0,i; for(i=0;i<a.length
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
 function sig(z){ return 1/(1+Math.exp(-z)); }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ============================================================
+   FILE UPLOAD — .txt/.md read natively; .docx via mammoth.js and
+   .pdf via pdf.js, both lazy-loaded from a CDN on first use (same
+   pattern as the on-demand detector models) so nobody who never
+   uploads a file pays for the extra download.
+   ============================================================ */
+var MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB guardrail against pathological files
+var SCRIPT_CACHE = {};
+function loadScript(src){
+  if(SCRIPT_CACHE[src]) return SCRIPT_CACHE[src];
+  SCRIPT_CACHE[src] = new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ delete SCRIPT_CACHE[src]; reject(new Error('Could not load '+src+' — check your internet connection.')); };
+    document.head.appendChild(s);
+  });
+  return SCRIPT_CACHE[src];
+}
+
+function readAsText(file){
+  return new Promise(function(resolve, reject){
+    var r = new FileReader();
+    r.onload = function(){ resolve(r.result); };
+    r.onerror = function(){ reject(new Error('Could not read the file.')); };
+    r.readAsText(file);
+  });
+}
+
+async function extractFromDocx(file){
+  await loadScript('https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js');
+  var buf = await file.arrayBuffer();
+  var result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+  return result.value;
+}
+
+async function extractFromPdf(file){
+  await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  var buf = await file.arrayBuffer();
+  var doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  var pages = [];
+  for(var i=1; i<=doc.numPages; i++){
+    var page = await doc.getPage(i);
+    var content = await page.getTextContent();
+    pages.push(content.items.map(function(it){ return it.str; }).join(' '));
+  }
+  return pages.join('\n\n');
+}
+
+async function extractText(file){
+  var name = file.name.toLowerCase();
+  if(file.size > MAX_UPLOAD_BYTES) throw new Error('That file is too large (max 25MB).');
+  if(/\.(txt|md|markdown|text)$/.test(name) || file.type==='text/plain'){
+    return readAsText(file);
+  }
+  if(/\.docx$/.test(name)) return extractFromDocx(file);
+  if(/\.pdf$/.test(name) || file.type==='application/pdf') return extractFromPdf(file);
+  if(/\.doc$/.test(name)) throw new Error('Old .doc format isn’t supported — save it as .docx and try again.');
+  throw new Error('Unsupported file type. Upload a .txt, .md, .docx or .pdf file.');
+}
 
 /* ============================================================
    DETECTOR
@@ -1868,18 +2097,62 @@ var SAMPLE = "In today's rapidly evolving digital landscape, artificial intellig
 + "I'm not sure I buy most of that, honestly. We tried three of these tools at work last year and two of them were abandoned within about four months. The problem wasn't the models. It was that nobody could agree on who owned the data, and the one person who understood the pipeline left in March. Our CTO still calls it a success in board decks, which tells you something. Maybe bigger companies have an easier time of it. From where I sat it looked like the same reorganisation we'd already done twice, with a new name on it.\n\n"
 + "Ultimately, those who embark on this transformative journey will find themselves at the forefront of their respective industries. Organizations must therefore prioritise the development of a robust data governance framework, invest in upskilling their workforce, and establish clear metrics for success. By understanding these fundamental principles, business leaders can navigate the complexities of digital transformation and position their companies for sustained growth in an increasingly competitive marketplace.";
 
-/* tabs */
+/* tabs / lightweight routing. 'writing' has no navbar tab of its own — it's
+   only reached from the Home dashboard's Writing Analysis card — so its
+   entry has tab:null. */
+var PANES = {
+  home:    {tab:'tabHome',   pane:'paneHome'},
+  detect:  {tab:'tabDetect', pane:'paneDetect'},
+  human:   {tab:'tabHuman',  pane:'paneHuman'},
+  writing: {tab:null,        pane:'paneWriting'}
+};
 function showTab(which){
-  var tabs = {detect:['tabDetect','paneDetect'], human:['tabHuman','paneHuman']};
-  for(var k in tabs){
-    var on = (k===which);
-    $(tabs[k][0]).classList.toggle('on', on);
-    $(tabs[k][1]).classList.toggle('hide', !on);
+  if(!PANES[which]) which='home';
+  for(var k in PANES){
+    var on = (k===which), cfg = PANES[k];
+    if(cfg.tab) $(cfg.tab).classList.toggle('on', on);
+    $(cfg.pane).classList.toggle('hide', !on);
   }
+  // the model-status strip only matters once the user is actually scanning/rewriting text
+  $('engineBar').classList.toggle('hide', which==='home' || which==='writing');
   window.scrollTo(0,0);
 }
+$('tabHome').onclick=function(){ showTab('home'); };
 $('tabDetect').onclick=function(){ showTab('detect'); };
 $('tabHuman').onclick =function(){ showTab('human'); };
+
+/* Home dashboard action-card buttons: anything with data-goto navigates
+   between panes the same way the navbar tabs do. */
+Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function(btn){
+  btn.onclick = function(){ showTab(btn.getAttribute('data-goto')); };
+});
+
+/* ---------- placeholder auth actions ----------
+   No account system exists yet. These buttons are visual only: they show a
+   toast instead of performing any real sign-in/sign-up, and are wired up
+   below wherever "Log In" / "Create Account" appears (navbar + the Home
+   dashboard's account card). */
+function showToast(msg){
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+[$('btnLoginNav'), $('homeLoginBtn')].forEach(function(btn){
+  btn.onclick = function(){
+    // TODO: Connect to authentication system — open the login flow here once
+    // accounts exist (e.g. redirect to /login or open an auth modal).
+    showToast('Log in isn’t available yet — accounts are coming soon.');
+  };
+});
+[$('btnSignupNav'), $('homeSignupBtn')].forEach(function(btn){
+  btn.onclick = function(){
+    // TODO: Connect to authentication system — open the sign-up flow here
+    // once accounts exist (e.g. redirect to /signup or open an auth modal).
+    showToast('Account creation isn’t available yet — check back soon.');
+  };
+});
 
 /* ---- model status ---- */
 function refreshEngine(){
@@ -1910,6 +2183,55 @@ $('hinp').addEventListener('input',updh);
 $('btnSample').onclick=function(){ $('inp').value=SAMPLE; upd(); runScan(); };
 $('btnClear').onclick=function(){ $('inp').value=''; upd(); $('reportCard').classList.add('hide');
   $('flagCard').classList.add('hide'); $('resBody').classList.add('hide'); $('resEmpty').classList.remove('hide'); };
+
+/* ---------- file upload ---------- */
+(function(){
+  var btn = $('btnUpload'), input = $('fileInput'), ta = $('inp'), status = $('uploadStatus');
+
+  function showStatus(html, cls){
+    status.innerHTML = html;
+    status.className = 'mini' + (cls ? ' '+cls : '');
+    status.classList.remove('hide');
+  }
+  function clearStatus(){ status.classList.add('hide'); status.textContent=''; }
+
+  async function handleFile(file){
+    if(!file) return;
+    var was = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span>Reading&hellip;';
+    showStatus('Extracting text from <b>'+esc(file.name)+'</b>&hellip;');
+    try{
+      var text = (await extractText(file)).trim();
+      if(!text){ throw new Error('No readable text was found in that file.'); }
+      ta.value = text;
+      upd();
+      $('reportCard').classList.add('hide'); $('flagCard').classList.add('hide');
+      $('resBody').classList.add('hide'); $('resEmpty').classList.remove('hide');
+      showStatus('Loaded '+wordCount(text)+' words from <b>'+esc(file.name)+'</b>.', 'ok-txt');
+      runScan();
+    }catch(err){
+      showStatus(esc(err && err.message ? err.message : 'Could not read that file.'), 'bad-txt');
+    }finally{
+      btn.disabled = false; btn.innerHTML = was;
+      input.value = ''; // allow re-selecting the same file
+    }
+  }
+
+  btn.onclick = function(){ clearStatus(); input.click(); };
+  input.onchange = function(){ handleFile(input.files && input.files[0]); };
+
+  ['dragenter','dragover'].forEach(function(ev){
+    ta.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); ta.classList.add('dragover'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    ta.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); ta.classList.remove('dragover'); });
+  });
+  ta.addEventListener('drop', function(e){
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+})();
 
 function verdictFor(r){
   var pct = r.pct;
