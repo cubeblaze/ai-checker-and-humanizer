@@ -329,7 +329,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 (function(){
   var t;
   try{
-    t = localStorage.getItem('detexa.theme');
+    t = localStorage.getItem('clarity.theme');
     if(t!=='light' && t!=='dark') t = 'light';
   }catch(e){
     try{ t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
@@ -346,7 +346,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
     <div class="brand">
       <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V9"/><path d="M10 18V5"/><path d="M16 18v-6"/><path d="M21 18V8"/></svg></div>
       <div>
-        <div class="brand-name">Detexa</div>
+        <div class="brand-name">Clarity.ai</div>
         <div class="brand-sub">AI detection &amp; rewriting</div>
       </div>
     </div>
@@ -2603,7 +2603,7 @@ $('btnRecheck').onclick=function(){
   btn.onclick = function(){
     var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
-    try{ localStorage.setItem('detexa.theme', next); }catch(e){}
+    try{ localStorage.setItem('clarity.theme', next); }catch(e){}
     sync();
   };
 })();
