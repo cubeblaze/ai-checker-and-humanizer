@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Detector &amp; Humanizer</title>
+<title>Klarity.ai</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIxMCIgeTE9IjgiIHgyPSI5MiIgeTI9Ijk0Ij4KPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMTZhMzRhIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzIyYzU1ZSIvPgo8L2xpbmVhckdyYWRpZW50Pgo8cmFkaWFsR3JhZGllbnQgaWQ9InMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjeD0iMzAiIGN5PSIyNCIgcj0iNjAiPgo8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZmZmZmYiIHN0b3Atb3BhY2l0eT0iLjIyIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2ZmZmZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9Ijg4IiByeD0iMjAiIGZpbGw9InVybCgjZykiLz4KPHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9Ijg4IiByeD0iMjAiIGZpbGw9InVybCgjcykiLz4KPHJlY3QgeD0iMzAiIHk9IjIzIiB3aWR0aD0iMTQiIGhlaWdodD0iNTQiIHJ4PSI0IiBmaWxsPSIjZmZmIi8+CjxwYXRoIGQ9Ik00NCw1MCBMNzEsMjUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+CjxwYXRoIGQ9Ik00NCw1MCBMNzEsNzUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+CjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik04MCwxMyBRODIsMTggODcsMjAgUTgyLDIyIDgwLDI3IFE3OCwyMiA3MywyMCBRNzgsMTggODAsMTMgWiIvPgo8L3N2Zz4K">
 <style>
 /* ============================================================
    THEME TOKENS — centralized, reusable theme system.
@@ -80,7 +81,7 @@ button,input,textarea{font:inherit; color:inherit}
 .mark{width:32px; height:32px; border-radius:9px; flex:0 0 auto; color:var(--accent-contrast);
   background:linear-gradient(145deg,var(--accent),var(--accent-2));
   display:grid; place-items:center; box-shadow:0 2px 8px -2px var(--accent-shadow-2); transition:var(--t-theme)}
-.mark svg{width:18px; height:18px; display:block}
+.mark svg{width:21px; height:21px; display:block}
 .brand-name{font-size:15px; font-weight:650; letter-spacing:-.015em; white-space:nowrap}
 .brand-sub{font-size:11.5px; color:var(--tx-3); white-space:nowrap; margin-top:-2px}
 
@@ -329,7 +330,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 (function(){
   var t;
   try{
-    t = localStorage.getItem('clarity.theme');
+    t = localStorage.getItem('klarity.theme');
     if(t!=='light' && t!=='dark') t = 'light';
   }catch(e){
     try{ t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
@@ -344,9 +345,16 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 <header class="appbar">
   <div class="appbar-in">
     <div class="brand">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V9"/><path d="M10 18V5"/><path d="M16 18v-6"/><path d="M21 18V8"/></svg></div>
+      <div class="mark">
+        <svg viewBox="0 0 100 100" fill="none">
+          <rect x="30" y="23" width="14" height="54" rx="4" fill="currentColor"/>
+          <path d="M44,50 L71,25" stroke="currentColor" stroke-width="13" stroke-linecap="round"/>
+          <path d="M44,50 L71,75" stroke="currentColor" stroke-width="13" stroke-linecap="round"/>
+          <path fill="currentColor" d="M80,13 Q82,18 87,20 Q82,22 80,27 Q78,22 73,20 Q78,18 80,13 Z"/>
+        </svg>
+      </div>
       <div>
-        <div class="brand-name">Clarity.ai</div>
+        <div class="brand-name">Klarity</div>
         <div class="brand-sub">AI detection &amp; rewriting</div>
       </div>
     </div>
@@ -2620,7 +2628,7 @@ $('btnRecheck').onclick=function(){
   btn.onclick = function(){
     var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
-    try{ localStorage.setItem('clarity.theme', next); }catch(e){}
+    try{ localStorage.setItem('klarity.theme', next); }catch(e){}
     sync();
   };
 })();
