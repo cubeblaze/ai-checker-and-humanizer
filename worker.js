@@ -1,5 +1,5 @@
 /**
- * Clarity.ai backend proxy — Cloudflare Worker
+ * Klarity.ai backend proxy — Cloudflare Worker
  *
  * Holds the Gemini API key as a secret and proxies AI-generation requests
  * from the frontend so students never see or enter a key. Also fetches

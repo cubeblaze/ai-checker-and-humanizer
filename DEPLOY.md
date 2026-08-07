@@ -1,4 +1,4 @@
-# Deploying the Clarity.ai backend (one-time, free)
+# Deploying the Klarity.ai backend (one-time, free)
 
 The 4 AI-powered features (Rubric Analyzer, Essay Coach, Research Assistant, Study
 Generator) need a tiny server to hold an API key. Students never see this key or
