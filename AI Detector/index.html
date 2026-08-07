@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Detector &amp; Humanizer</title>
+<style>
+:root{
+  --bg:#f7f8fa; --surface:#ffffff; --surface-2:#f2f4f7; --surface-3:#e9edf2;
+  --line:#e2e7ee; --line-strong:#cfd7e2;
+  --tx:#0d1420; --tx-2:#5b6878; --tx-3:#8b98a9;
+  --accent:#4f46e5; --accent-hover:#4338ca; --accent-soft:rgba(79,70,229,.09);
+  --ai:#0891b2; --ai-soft:rgba(8,145,178,.13); --ai-line:rgba(8,145,178,.45);
+  --para:#7c3aed; --para-soft:rgba(124,58,237,.12); --para-line:rgba(124,58,237,.42);
+  --ok:#059669; --ok-soft:rgba(5,150,105,.12);
+  --warn:#d97706; --bad:#e11d48;
+  --r-xs:7px; --r-sm:10px; --r:13px; --r-lg:18px;
+  --sh-sm:0 1px 2px rgba(13,20,32,.05);
+  --sh:0 1px 3px rgba(13,20,32,.06), 0 8px 24px -8px rgba(13,20,32,.09);
+  --sh-lg:0 2px 6px rgba(13,20,32,.07), 0 18px 44px -12px rgba(13,20,32,.16);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#080a0e; --surface:#111620; --surface-2:#161d29; --surface-3:#1e2634;
+    --line:#222b3a; --line-strong:#2f3a4c;
+    --tx:#e9eef6; --tx-2:#95a3b6; --tx-3:#6b7889;
+    --accent:#6366f1; --accent-hover:#818cf8; --accent-soft:rgba(99,102,241,.16);
+    --ai:#22d3ee; --ai-soft:rgba(34,211,238,.15); --ai-line:rgba(34,211,238,.5);
+    --para:#a78bfa; --para-soft:rgba(167,139,250,.15); --para-line:rgba(167,139,250,.48);
+    --ok:#34d399; --ok-soft:rgba(52,211,153,.14);
+    --warn:#fbbf24; --bad:#fb7185;
+    --sh-sm:0 1px 2px rgba(0,0,0,.4);
+    --sh:0 1px 3px rgba(0,0,0,.5), 0 8px 24px -8px rgba(0,0,0,.6);
+    --sh-lg:0 2px 6px rgba(0,0,0,.5), 0 18px 44px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f7f8fa; --surface:#fff; --surface-2:#f2f4f7; --surface-3:#e9edf2;
+  --line:#e2e7ee; --tx:#0d1420; --tx-2:#5b6878; --tx-3:#8b98a9; --accent:#4f46e5;
+  --ai:#0891b2; --para:#7c3aed; --ok:#059669;
+}
+:root[data-theme="dark"]{
+  --bg:#080a0e; --surface:#111620; --surface-2:#161d29; --surface-3:#1e2634;
+  --line:#222b3a; --tx:#e9eef6; --tx-2:#95a3b6; --tx-3:#6b7889; --accent:#6366f1;
+  --ai:#22d3ee; --para:#a78bfa; --ok:#34d399;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--tx);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,Roboto,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"kern" 1,"liga" 1;
+}
+h1,h2,h3{margin:0; letter-spacing:-.02em; font-weight:650}
+p{margin:0}
+button,input,textarea{font:inherit; color:inherit}
+::selection{background:var(--accent-soft)}
+
+/* ---------- app bar ---------- */
+.appbar{
+  position:sticky; top:0; z-index:50;
+  background:color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter:saturate(180%) blur(14px); -webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.appbar-in{max-width:1240px; margin:0 auto; padding:0 24px; height:62px;
+  display:flex; align-items:center; gap:20px}
+.brand{display:flex; align-items:center; gap:11px; margin-right:auto; min-width:0}
+.mark{width:32px; height:32px; border-radius:9px; flex:0 0 auto;
+  background:linear-gradient(145deg,var(--accent),#8b5cf6);
+  display:grid; place-items:center; box-shadow:0 2px 8px -2px rgba(79,70,229,.5)}
+.mark svg{width:18px; height:18px; display:block}
+.brand-name{font-size:15px; font-weight:650; letter-spacing:-.015em; white-space:nowrap}
+.brand-sub{font-size:11.5px; color:var(--tx-3); white-space:nowrap; margin-top:-2px}
+
+.tabs{display:flex; gap:2px; background:var(--surface-2); padding:3px;
+  border-radius:10px; border:1px solid var(--line)}
+.tab{appearance:none; border:0; background:transparent; color:var(--tx-2);
+  font-size:13.5px; font-weight:600; padding:7px 15px; border-radius:7px; cursor:pointer;
+  white-space:nowrap; transition:color .15s, background .15s}
+.tab:hover:not(.on){color:var(--tx); background:var(--surface-3)}
+.tab.on{background:var(--surface); color:var(--tx); box-shadow:var(--sh-sm)}
+@media (prefers-color-scheme: dark){ .tab.on{background:var(--surface-3)} }
+:root[data-theme="dark"] .tab.on{background:var(--surface-3)}
+:root[data-theme="light"] .tab.on{background:#fff}
+.theme-btn{appearance:none; width:34px; height:34px; border-radius:9px; border:1px solid var(--line);
+  background:var(--surface-2); color:var(--tx-2); cursor:pointer; display:grid; place-items:center;
+  transition:.15s; flex:0 0 auto}
+.theme-btn:hover{color:var(--tx); border-color:var(--line-strong)}
+.theme-btn svg{width:15px; height:15px}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1240px; margin:0 auto; padding:24px 24px 72px}
+.grid{display:grid; grid-template-columns:minmax(0,1fr) 372px; gap:20px; align-items:start}
+@media (max-width:1000px){ .grid{grid-template-columns:minmax(0,1fr)} .appbar-in{padding:0 16px} .wrap{padding:18px 16px 56px} }
+@media (max-width:620px){
+  .brand-sub{display:none}
+  .appbar-in{gap:12px; height:56px}
+  .tab{padding:7px 12px; font-size:13px}
+}
+@media (max-width:430px){
+  .brand-name{display:none}
+  .ba{grid-template-columns:1fr 1fr 1fr; gap:6px}
+  .ba b{font-size:20px}
+  .btn{padding:9px 13px; font-size:13px}
+}
+.stack{display:grid; gap:20px; align-content:start}
+
+/* ---------- status strip ---------- */
+.enginebar{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r); padding:11px 15px; font-size:12.75px; color:var(--tx-2); margin-bottom:20px;
+  box-shadow:var(--sh-sm); line-height:1.5}
+.enginebar b{color:var(--tx); font-weight:600}
+.dot{width:7px; height:7px; border-radius:99px; flex:0 0 auto; position:relative}
+.dot::after{content:''; position:absolute; inset:-4px; border-radius:99px; opacity:.22; background:inherit}
+.dot.warn{background:var(--warn)} .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--sh); overflow:hidden}
+.card-hd{display:flex; align-items:center; gap:10px; padding:15px 18px 0}
+.card-hd h2{font-size:12px; text-transform:uppercase; letter-spacing:.075em; color:var(--tx-3); font-weight:700}
+.card-bd{padding:14px 18px 18px}
+.card-hd + .card-bd{padding-top:12px}
+
+/* ---------- inputs ---------- */
+textarea{width:100%; min-height:320px; resize:vertical; background:var(--surface-2); color:var(--tx);
+  border:1px solid var(--line); border-radius:var(--r); padding:15px 16px; line-height:1.72;
+  outline:none; transition:border-color .15s, box-shadow .15s; font-size:14.5px}
+textarea::placeholder{color:var(--tx-3)}
+textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accent-soft); background:var(--surface)}
+.row{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-top:13px}
+.spacer{flex:1}
+.count{font-size:12.5px; color:var(--tx-3); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+.btn{appearance:none; border:1px solid var(--line-strong); background:var(--surface); color:var(--tx);
+  font-size:13.5px; font-weight:600; padding:9px 15px; border-radius:var(--r-sm); cursor:pointer;
+  transition:.14s; box-shadow:var(--sh-sm); white-space:nowrap; display:inline-flex; align-items:center; gap:7px}
+.btn:hover:not(:disabled){background:var(--surface-2); transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:focus-visible{outline:none; box-shadow:0 0 0 3.5px var(--accent-soft)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;
+  box-shadow:0 1px 2px rgba(79,70,229,.3), 0 6px 16px -6px rgba(79,70,229,.5)}
+.btn.primary:hover:not(:disabled){background:var(--accent-hover); border-color:var(--accent-hover)}
+.btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
+.btn.wide{width:100%; justify-content:center}
+
+/* ---------- score ---------- */
+.score{display:flex; align-items:center; gap:19px}
+.ring{position:relative; width:118px; height:118px; flex:0 0 auto}
+.ring svg{transform:rotate(-90deg); display:block}
+.ring .val{position:absolute; inset:0; display:grid; place-content:center; text-align:center}
+.ring .val b{display:block; font-size:31px; font-weight:700; letter-spacing:-.045em; line-height:1;
+  font-variant-numeric:tabular-nums}
+.ring .val span{font-size:9.5px; color:var(--tx-3); text-transform:uppercase; letter-spacing:.1em;
+  font-weight:650; margin-top:3px; display:block}
+.score-meta{min-width:0}
+.pill{display:inline-block; font-size:12.5px; font-weight:650; padding:4px 11px; border-radius:99px;
+  border:1px solid transparent; margin-bottom:7px; letter-spacing:-.005em}
+.pill.hi{background:var(--ai-soft); color:var(--ai); border-color:var(--ai-line)}
+.pill.mid{background:rgba(217,119,6,.12); color:var(--warn); border-color:rgba(217,119,6,.4)}
+.pill.lo{background:var(--ok-soft); color:var(--ok); border-color:rgba(5,150,105,.38)}
+.verdict-note{font-size:12.75px; color:var(--tx-2); line-height:1.5}
+
+.metric{margin-top:15px}
+.metric .lab{display:flex; justify-content:space-between; gap:12px; font-size:12.5px;
+  color:var(--tx-2); margin-bottom:6px}
+.metric .lab b{color:var(--tx); font-variant-numeric:tabular-nums; font-weight:650}
+.bar{height:5px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+.bar i{display:block; height:100%; border-radius:99px; background:var(--accent);
+  transition:width .55s cubic-bezier(.4,0,.2,1)}
+
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:15px}
+.chip{background:var(--surface-2); border:1px solid var(--line); border-radius:7px;
+  padding:4px 9px; font-size:11.5px; color:var(--tx-2); white-space:nowrap}
+.chip b{color:var(--tx); font-weight:650; font-variant-numeric:tabular-nums}
+
+/* ---------- report ---------- */
+.legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--tx-2); margin-bottom:13px}
+.legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+#report{white-space:pre-wrap; word-wrap:break-word; line-height:1.95; font-size:14.75px;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r);
+  padding:17px; max-height:560px; overflow:auto}
+.seg{border-radius:4px; padding:1.5px 0; transition:filter .15s}
+.seg.ai{background:var(--ai-soft); box-shadow:inset 0 -2px 0 var(--ai-line)}
+.seg.para{background:var(--para-soft); box-shadow:inset 0 -2px 0 var(--para-line)}
+.seg.ai:hover,.seg.para:hover{filter:brightness(1.12); cursor:help}
+
+.flaglist{max-height:330px; overflow:auto; display:grid; gap:8px}
+.flagitem{border-left:2.5px solid var(--ai); background:var(--surface-2); border-radius:0 var(--r-sm) var(--r-sm) 0;
+  padding:10px 12px; font-size:12.75px; line-height:1.55}
+.flagitem.para{border-left-color:var(--para)}
+.flagitem .pct{float:right; font-weight:700; font-variant-numeric:tabular-nums; font-size:11.5px;
+  color:var(--tx-2); margin-left:10px}
+.flagitem .why{display:block; color:var(--tx-3); font-size:11px; margin-top:6px; line-height:1.45}
+
+/* ---------- humanizer ---------- */
+#out{white-space:pre-wrap; word-wrap:break-word; line-height:1.85; background:var(--surface-2);
+  border:1px solid var(--line); border-radius:var(--r); padding:17px; min-height:200px;
+  max-height:560px; overflow:auto; font-size:14.75px}
+#out .ch{background:var(--ok-soft); border-radius:3px; box-shadow:inset 0 -2px 0 rgba(5,150,105,.42)}
+.ba{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:14px}
+.ba div{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-sm);
+  padding:12px 10px; text-align:center}
+.ba b{display:block; font-size:24px; font-weight:700; letter-spacing:-.035em; font-variant-numeric:tabular-nums}
+.ba span{font-size:10px; color:var(--tx-3); text-transform:uppercase; letter-spacing:.09em; font-weight:650}
+
+.seg-ctl{display:flex; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:3px; gap:3px}
+.seg-ctl button{flex:1; appearance:none; border:0; background:transparent; color:var(--tx-2);
+  font-size:13px; font-weight:600; padding:8px 6px; border-radius:7px; cursor:pointer; transition:.15s}
+.seg-ctl button:hover:not(.on){color:var(--tx)}
+.seg-ctl button.on{background:var(--accent); color:#fff; box-shadow:var(--sh-sm)}
+
+.opts{display:grid; gap:3px}
+label.chk{display:flex; gap:11px; align-items:flex-start; font-size:13.5px; cursor:pointer;
+  padding:9px 10px; border-radius:var(--r-sm); transition:background .14s; margin:0 -10px}
+label.chk:hover{background:var(--surface-2)}
+label.chk input{margin:2px 0 0; accent-color:var(--accent); width:15px; height:15px; flex:0 0 auto; cursor:pointer}
+label.chk span{font-weight:550}
+label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-height:1.45; font-weight:400; margin-top:2px}
+
+/* ---------- misc ---------- */
+.note{background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:15px 17px; font-size:12.5px; color:var(--tx-2); line-height:1.6; box-shadow:var(--sh-sm)}
+.note b{color:var(--tx); font-weight:650}
+.note-hd{display:flex; align-items:center; gap:8px; margin-bottom:7px; color:var(--tx);
+  font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em}
+.note-hd svg{width:14px; height:14px; flex:0 0 auto; color:var(--tx-3)}
+.mini{font-size:12.25px; color:var(--tx-3); line-height:1.55}
+.empty{color:var(--tx-3); font-size:13.25px; text-align:center; padding:34px 12px; line-height:1.6}
+.empty svg{width:30px; height:30px; opacity:.32; margin-bottom:11px}
+.ok-txt{color:var(--ok)} .bad-txt{color:var(--bad)}
+.hide{display:none !important}
+.spin{display:inline-block; width:13px; height:13px; border:2px solid var(--line-strong);
+  border-top-color:var(--accent); border-radius:99px; animation:sp .65s linear infinite;
+  vertical-align:-2px; margin-right:7px}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:11px; height:11px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:99px; border:3px solid var(--surface)}
+::-webkit-scrollbar-thumb:hover{background:var(--tx-3)}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V9"/><path d="M10 18V5"/><path d="M16 18v-6"/><path d="M21 18V8"/></svg></div>
+      <div>
+        <div class="brand-name">Detexa</div>
+        <div class="brand-sub">AI detection &amp; rewriting</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab on" id="tabDetect">Detector</button>
+      <button class="tab" id="tabHuman">Humanizer</button>
+    </nav>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<div id="engineBar" class="enginebar">
+  <span id="engineDot" class="dot warn"></span>
+  <span id="engineTxt">Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.</span>
+</div>
+
+<!-- ============ DETECTOR ============ -->
+<div id="paneDetect">
+<div class="grid">
+  <div class="stack">
+    <div class="card">
+      <div class="card-hd"><h2>Text to analyze</h2></div>
+      <div class="card-bd">
+        <textarea id="inp" placeholder="Paste an essay, article or paragraph here. 300+ words gives the most reliable score."></textarea>
+        <div class="row">
+          <button class="btn primary" id="btnScan">Analyze text</button>
+          <button class="btn" id="btnSample">Load sample</button>
+          <button class="btn" id="btnClear">Clear</button>
+          <span class="spacer"></span>
+          <span class="count" id="cnt">0 words</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hide" id="reportCard">
+      <div class="card-hd"><h2>Segment report</h2></div>
+      <div class="card-bd">
+        <div class="legend">
+          <span><i style="background:var(--ai)"></i>AI&#8209;generated</span>
+          <span><i style="background:var(--para)"></i>AI&#8209;generated + paraphrased</span>
+          <span><i style="background:var(--line-strong)"></i>Human&#8209;written</span>
+        </div>
+        <div id="report"></div>
+        <p class="mini" style="margin-top:11px">Hover a highlighted sentence for its score and the signals behind it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <div class="card-hd"><h2>Result</h2></div>
+      <div class="card-bd">
+        <div id="resEmpty" class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <div>Run an analysis to see the breakdown.</div>
+        </div>
+        <div id="resBody" class="hide">
+          <div class="score">
+            <div class="ring">
+              <svg width="118" height="118" viewBox="0 0 118 118">
+                <circle cx="59" cy="59" r="51" fill="none" stroke="var(--surface-3)" stroke-width="11"/>
+                <circle id="ringArc" cx="59" cy="59" r="51" fill="none" stroke="var(--ai)" stroke-width="11"
+                        stroke-linecap="round" stroke-dasharray="320" stroke-dashoffset="320"
+                        style="transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1), stroke .3s"/>
+              </svg>
+              <div class="val"><b id="pctVal">0%</b><span>AI</span></div>
+            </div>
+            <div class="score-meta">
+              <span class="pill lo" id="verdict">&mdash;</span>
+              <p class="verdict-note" id="verdictNote"></p>
+            </div>
+          </div>
+
+          <div class="metric"><div class="lab"><span id="lPerp">Predictability</span><b id="mPerp">0</b></div><div class="bar"><i id="bPerp"></i></div></div>
+          <div class="metric"><div class="lab"><span id="lBurst">Uniformity</span><b id="mBurst">0</b></div><div class="bar"><i id="bBurst"></i></div></div>
+          <div class="metric"><div class="lab"><span id="lPat">Pattern signal</span><b id="mPat">0</b></div><div class="bar"><i id="bPat"></i></div></div>
+          <div class="metric"><div class="lab"><span id="lHum">Human signals</span><b id="mHum">0</b></div><div class="bar"><i id="bHum" style="background:var(--ok)"></i></div></div>
+
+          <div class="chips" id="chips"></div>
+
+          <div class="row">
+            <button class="btn primary wide" id="btnToHuman">Humanize this text &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hide" id="flagCard">
+      <div class="card-hd"><h2>Flagged sentences</h2></div>
+      <div class="card-bd"><div class="flaglist" id="flaglist"></div></div>
+    </div>
+
+    <div class="note">
+      <div class="note-hd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+        Accuracy &mdash; and an important caveat about it
+      </div>
+      The primary detector is trained on 11 different LLM architectures (GPT&#8209;2/3/4, ChatGPT, Mistral, MPT, LLaMA&#8209;2, Cohere), not one &mdash; that&rsquo;s what lets it generalize to models it never saw, like Claude or Gemini, rather than only recognizing ChatGPT&rsquo;s style. Swapping in that model took a fresh-text test from 1/6 to 5/6. Across 19 samples it scores <b>16/19</b>, with 2 false positives on dense academic and historical human prose.
+      <br><br>
+      <b>The caveat:</b> every one of those samples was 70&ndash;130 words &mdash; below the length this tool now refuses to judge. That threshold exists because of a measured effect: one identical human passage scored <b>90% AI at 70 words and 11% at 134 words</b>. Short text collapses toward &ldquo;AI&rdquo; regardless of who wrote it. So the accuracy figure above was measured in exactly the range where the detector is least trustworthy, and I have not verified it on 200+ word text. Longer input should behave better, not worse &mdash; but that is an expectation, not a measurement. Use this as a signal, never as proof about a person.</div>
+  </div>
+</div>
+</div>
+
+<!-- ============ HUMANIZER ============ -->
+<div id="paneHuman" class="hide">
+<div class="grid">
+  <div class="stack">
+    <div class="card">
+      <div class="card-hd"><h2>Original text</h2></div>
+      <div class="card-bd">
+        <textarea id="hinp" placeholder="Paste the AI-sounding text you want rewritten."></textarea>
+        <div class="row">
+          <button class="btn primary" id="btnHum">Humanize</button>
+          <button class="btn" id="btnReroll">Re-roll</button>
+          <span class="spacer"></span>
+          <span class="count" id="hcnt">0 words</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hide" id="outCard">
+      <div class="card-hd"><h2>Humanized output</h2></div>
+      <div class="card-bd">
+        <div class="ba">
+          <div><b id="beforeScore" style="color:var(--ai)">0%</b><span>Before</span></div>
+          <div><b id="afterScore" style="color:var(--ok)">0%</b><span>After</span></div>
+          <div><b id="editCount">0</b><span>Edits</span></div>
+        </div>
+        <div id="out"></div>
+        <div class="row">
+          <button class="btn primary" id="btnCopy">Copy result</button>
+          <button class="btn" id="btnDl">Download .txt</button>
+          <button class="btn" id="btnRecheck">Re-check</button>
+        </div>
+        <div class="chips" id="hchips"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <div class="card-hd"><h2>Rewrite scope</h2></div>
+      <div class="card-bd">
+        <div class="seg-ctl" id="scope">
+          <button data-scope="flagged" class="on">Flagged only</button>
+          <button data-scope="all">Entire text</button>
+        </div>
+        <p class="mini" style="margin-top:11px" id="scopeNote"><b style="color:var(--tx)">Flagged only</b> &mdash; the detector runs first, and anything it reads as human is copied through unchanged. Keeps your wording and voice everywhere except the sections it flagged.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h2>Rewrite strength</h2></div>
+      <div class="card-bd">
+        <div class="seg-ctl" id="strength">
+          <button data-s="1">Light</button>
+          <button data-s="2" class="on">Balanced</button>
+          <button data-s="3">Aggressive</button>
+        </div>
+        <p class="mini" style="margin-top:11px" id="strengthNote">Balanced &mdash; swaps AI vocabulary, fixes punctuation and varies sentence length while keeping the original tone.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h2>Transformations</h2></div>
+      <div class="card-bd">
+        <div class="opts">
+          <label class="chk"><input type="checkbox" id="oVocab" checked><span>Swap AI vocabulary<small>delve, leverage, robust, pivotal, seamless &rarr; plain equivalents</small></span></label>
+          <label class="chk"><input type="checkbox" id="oPhrase" checked><span>Cut filler phrases<small>&ldquo;It is important to note that&rdquo;, &ldquo;In today&rsquo;s world&rdquo;</small></span></label>
+          <label class="chk"><input type="checkbox" id="oContr" checked><span>Add contractions<small>do not &rarr; don&rsquo;t, it is &rarr; it&rsquo;s</small></span></label>
+          <label class="chk"><input type="checkbox" id="oPunct" checked><span>Fix robotic punctuation<small>Removes em dashes and semicolon chains</small></span></label>
+          <label class="chk"><input type="checkbox" id="oBurst" checked><span>Vary sentence length<small>Splits long sentences, merges short ones</small></span></label>
+          <label class="chk"><input type="checkbox" id="oTrans" checked><span>Rewrite formal transitions<small>Furthermore &rarr; Also, However &rarr; But</small></span></label>
+          <label class="chk"><input type="checkbox" id="oCasual"><span>Add casual markers<small>Occasional &ldquo;Honestly,&rdquo; openers. Adds words &mdash; review first.</small></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <div class="note-hd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v6c0 4.4 3.4 7.6 8 8 4.6-.4 8-3.6 8-8V7z"/></svg>
+        What this actually does &mdash; and its real limit
+      </div>
+      Every transformation here is lexical, structural or punctuation-level &mdash; nothing is invented. Measured against the current detector, that moves the score by roughly <b>1 point</b>, not 50. That number went down, not up, when the detector improved: the model now doing the scoring was trained with adversarial hard-negative mining specifically to resist this kind of surface rewriting, so word swaps and sentence-splitting barely register. I also tested a small (0.5B) language model running fully in-browser to do real generative rewriting instead of rule-based swaps &mdash; it made the writing worse (more corporate, not less) and moved the detector score by <b>zero</b>, while costing a slow multi-minute download and 10+ seconds per paragraph. That's not shipped. There is currently no way to reliably beat this detector by rewriting text with it in the loop, and any tool that claims otherwise should be treated with suspicion. Read the output before using it, and remember that passing a detector is not the same as the text being yours.
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+
+/* ~700 most frequent English words, roughly frequency-ordered.
+   Index position acts as a rank for the surprisal (perplexity) proxy. */
+var FREQ_WORDS = ("the be to of and a in that have i it for not on with he as you do at this but his by from " +
+"they we say her she or an will my one all would there their what so up out if about who get which go me when " +
+"make can like time no just him know take people into year your good some could them see other than then now " +
+"look only come it its over think also back after use two how our work first well way even new want because " +
+"any these give day most us is are was were been has had did does said made many such long great little own " +
+"under above off down again once here both each few more same too very should must may might shall am being " +
+"through during before between while against among within without across behind beyond near around toward " +
+"upon since until though although unless whether however therefore thus hence still yet already always never " +
+"often sometimes usually rarely again ever else almost quite rather really actually simply perhaps maybe " +
+"probably certainly clearly indeed course fact case point part place thing things world life man woman child " +
+"children men women person people family friend school student teacher year years month week day days night " +
+"morning today tomorrow yesterday hour minute moment number group company business money market water food " +
+"home house room door car city country state government law right left hand head eye face body heart mind " +
+"idea word words book story name question answer problem reason result end start begin began began end change " +
+"help need try find keep let put set run move show tell ask feel seem become leave call turn bring hold write " +
+"read hear speak talk walk sit stand play live love like want mean happen believe remember understand learn " +
+"teach study grow build open close send pay meet lose win stop watch wait send buy sell eat drink sleep walk " +
+"big small large little long short high low old new young early late good bad better best worse worst same " +
+"different next last first second third own real true false full empty easy hard free sure clear open close " +
+"strong weak hot cold warm dark light heavy soft loud quiet fast slow rich poor happy sad glad angry tired " +
+"ready able whole half every another each either neither none nothing something anything everything someone " +
+"anyone everyone nobody somebody himself herself myself yourself themselves ourselves itself who whom whose " +
+"where why how when what which that this these those there here am he she they we you i me him her us them " +
+"very much more less least most just only even still also too again enough almost about around over under " +
+"between into onto off out up down back away along away together apart forward behind ahead inside outside " +
+"one two three four five six seven eight nine ten hundred thousand million first next last few several many " +
+"all some any no every much little more most other another such same own next past future present current " +
+"national local public private social personal general special common main major minor simple hard easy " +
+"important possible available likely certain sure clear true real actual normal usual final total whole " +
+"and or but so if then than because while when where after before until since though as that which who " +
+"got went came took gave made saw knew thought felt found told asked used tried called worked looked seemed " +
+"left kept began held brought moved lived played turned started stopped needed wanted liked " +
+/* mid-frequency band */
+"able above accept access account across act action activity add address afraid age agree ahead air allow " +
+"almost alone along already although always among amount ancient animal announce answer anybody appear apply " +
+"approach area argue arm army arrive art article artist aside ask aspect assume attack attempt attend attention " +
+"author available average avoid award aware away baby back bad bag balance ball band bank base basic beach " +
+"bear beat beauty bed beer before begin behavior behind belief believe belong below benefit beside best bet " +
+"better beyond bill bird birth bit black blood blue board boat body bone book border born both bottle bottom " +
+"box boy brain branch break breath bridge brief bright bring broad brother budget build burn bus business busy " +
+"button buy cake call camera camp campaign cancer candidate capital captain car card care career carry case " +
+"cash cat catch cause cell center central century certain chain chair challenge chance change channel chapter " +
+"character charge check chest chicken chief choice choose church circle citizen city civil claim class clean " +
+"clear climate climb clock close cloud club coach coast coat code coffee cold collect college color column " +
+"combine come comfort command comment commit common community company compare compete complete computer concept " +
+"concern condition conduct conference confirm connect consider consist constant contact contain content contest " +
+"context continue contract contrast control convert cook cool copy corner correct cost cotton council count " +
+"country couple course court cover create credit crime crisis critical crop cross crowd cultural culture cup " +
+"current custom customer cut cycle daily damage dance danger dark data date daughter deal death debate debt " +
+"decade decide decision declare decline deep defeat defense define degree deliver demand deny depend depth " +
+"describe design desire desk despite destroy detail detect develop device diet differ difficult dinner direct " +
+"direction dirty discover discuss disease display distance divide doctor document dog dollar domestic door " +
+"double doubt down draft drag draw dream dress drink drive drop drug dry duty each earn earth ease east easy " +
+"economic economy edge edit education effect effort egg eight either elect element else emerge emotion employ " +
+"empty enable encourage end enemy energy engage engine enjoy enough enter entire entry environment equal " +
+"equipment error escape especially establish estate estimate ethnic evaluate even evening event eventually " +
+"everybody evidence exact examine example exceed except exchange excite exclude excuse execute exercise exist " +
+"exit expand expect expense experience experiment expert explain explore express extend extent external extra " +
+"extreme eye fabric face facility fact factor fail fair faith fall false familiar farm fast father fault favor " +
+"fear feature federal fee feed feel female fence few field fight figure file fill film final finance find fine " +
+"finger finish fire firm fish fit five fix flat flight floor flow flower fly focus fold follow foot force " +
+"foreign forest forget form formal format former forth fortune forward found four frame frequent fresh friend " +
+"front fruit fuel full fun function fund future gain game gap garden gas gate gather gender general generate " +
+"gentle gift girl give glass global goal gold golf grade grain grand grant grass gray green ground group grow " +
+"growth guard guess guest guide gun guy habit hair half hall hand handle hang happen happy harbor hard harm " +
+"hat hate head health hear heart heat heavy height hell hello help hence herself hide high hill him hire " +
+"history hit hold hole holiday home honest hope horse hospital host hot hotel hour house housing however huge " +
+"human hundred hungry hunt hurt husband ice idea ideal identify image imagine impact implement imply import " +
+"impose improve include income increase indeed index indicate industry infant influence inform initial injury " +
+"inner input inquiry inside insist install instance instead institution instruction insurance intend interest " +
+"internal international interview introduce invest investment involve iron island issue item job join joint " +
+"joke journal joy judge juice jump junior jury just justice keep key kick kid kill kind king kitchen knee " +
+"knife knock know knowledge lab labor lack lady lake land language large last late later laugh launch law " +
+"layer lead leader leaf league lean learn lease least leather leave lecture left leg legal lemon length less " +
+"lesson let letter level library license lie life lift light limit line link lip list listen literature little " +
+"load loan local locate lock log logic lonely long look loose lose loss lot loud love low luck lunch machine " +
+"magazine mail main maintain major make male mall man manage manager manner map march margin mark market " +
+"marriage mass master match material matter maximum maybe meal mean measure meat media medical medicine meet " +
+"member memory mental mention menu mere message metal method middle might mile military milk million mind " +
+"mine minor minute mirror miss mission mistake mix mobile model modern modest moment money monitor month mood " +
+"moon moral more morning most mother motion motor mount mouth move movie much multiple muscle museum music " +
+"must mutual myself mystery narrow nation native natural nature near nearly neck need negative neighbor " +
+"neither nerve net network never news newspaper next nice night nine noise none nor normal north nose note " +
+"nothing notice notion novel now nowhere nuclear number nurse object observe obtain obvious occasion occupy " +
+"occur ocean odd offer office officer official oil old olive once one ongoing online only onto open operate " +
+"opinion opponent opportunity oppose option orange order organic organize origin other otherwise ought outcome " +
+"outdoor output outside oven over overall overcome owe own owner pace pack page pain paint pair palm panel " +
+"paper parent park part particular partner party pass passage passenger past patch path patient pattern pause " +
+"pay peace peak peer penalty people pepper per percent perfect perform perhaps period permit person personal " +
+"phase phone photo phrase physical pick picture piece pile pilot pink pipe pitch place plan plane plant " +
+"plastic plate play please pleasure plenty plot plus pocket poem poet point police policy political politics " +
+"poll pool poor pop popular port portion position positive possess possible post pot potato potential pound " +
+"pour power practice praise pray predict prefer premium prepare present preserve president press pressure " +
+"pretty prevent previous price pride primary prime print prior priority prison private prize probably problem " +
+"procedure process produce product profession profile profit program progress project promise promote prompt " +
+"proof proper property proportion proposal propose protect protein protest proud prove provide public publish " +
+"pull punch purchase pure purpose pursue push put quality quarter question quick quiet quit quite quote race " +
+"radio rail rain raise range rank rapid rare rate rather ratio raw reach react read ready real reality realize " +
+"reason recall receive recent recipe recognize recommend record recover reduce refer reflect reform refuse " +
+"regard region register regular reject relate relation release relevant relief religion rely remain remark " +
+"remember remind remote remove repair repeat replace reply report represent request require rescue research " +
+"reserve resident resist resolve resource respect respond response responsible rest restore result retain " +
+"retire return reveal revenue review revolution reward rhythm rice rich ride right ring rise risk river road " +
+"rock role roll roof room root rope rough round route routine row royal rule run rural rush sad safe safety " +
+"sail salad salary sale salt same sample sand satisfy save say scale scan scene schedule scheme scholar school " +
+"science score screen script sea search season seat second secret section sector secure see seed seek seem " +
+"segment seize select self sell senate send senior sense sentence separate sequence series serious serve " +
+"service session set settle seven several severe sex shade shadow shake shall shape share sharp she sheet " +
+"shelf shell shelter shift shine ship shirt shock shoe shoot shop short shot should shoulder shout show shower " +
+"shut sick side sight sign signal silence silent silver similar simple since sing single sink sir sister sit " +
+"site situation six size skill skin sky sleep slice slide slight slip slow small smart smell smile smoke " +
+"smooth snap snow social society soft software soil solar soldier solid solution solve some son song soon " +
+"sorry sort soul sound soup source south space speak special species specific speech speed spell spend sphere " +
+"spirit split sponsor sport spot spread spring square squeeze stable staff stage stair stake stand standard " +
+"star stare start state statement station status stay steady steal steam steel step stick still stock stomach " +
+"stone stop storage store storm story straight strange strategy stream street strength stress stretch strike " +
+"string strip stroke strong structure struggle student studio study stuff style subject submit succeed success " +
+"such sudden suffer sugar suggest suit summer sun supply support suppose sure surface surgery surprise " +
+"surround survey survive suspect sustain swear sweep sweet swim switch symbol symptom system table tail take " +
+"tale talent talk tall tank tape target task taste tax tea teach team tear technical technique technology " +
+"telephone tell temperature temporary tend tension term terrible territory test text thank theme theory " +
+"therapy thick thin thing think third thirty this thought thousand threat three throat through throughout " +
+"throw thus ticket tie tight time tiny tip tire title today toe together tomorrow tone tonight tool tooth top " +
+"topic total touch tough tour tourist toward tower town track trade tradition traffic trail train transfer " +
+"transform transition translate transport travel treat treatment tree trend trial tribe trick trip troop " +
+"trouble truck true trust truth try tube tune turn twelve twenty twice twin type typical ugly ultimate unable " +
+"uncle under undergo understand unfair uniform union unique unit unite universe university unknown unless " +
+"unlike until unusual update upon upper upset urban urge usual valley value van variable variety vast vehicle " +
+"venture version very vessel veteran victim victory video view village violence virtual virus visible vision " +
+"visit visual vital voice volume vote wage wait wake walk wall want war warm warn wash waste watch water wave " +
+"way weak wealth weapon wear weather web wedding week weekend weigh weight welcome welfare well west wet what " +
+"wheat wheel when where whether which while whisper white whole whom whose why wide widely wife wild will win " +
+"wind window wine wing winner winter wire wise wish witness woman wonder wood wool word work worker world " +
+"worry worth would wound wrap write writer wrong yard yeah year yellow yes yesterday yet yield young your " +
+"yourself youth zone").split(/\s+/);
+
+var FREQ_RANK = (function(){ var m={},i; for(i=0;i<FREQ_WORDS.length;i++){ if(m[FREQ_WORDS[i]]===undefined) m[FREQ_WORDS[i]]=Object.keys(m).length; } return m; })();
+var FREQ_N = Object.keys(FREQ_RANK).length;
+
+/* Single words strongly over-represented in LLM output. weight 1..3 */
+var AI_WORDS = {
+  delve:3, delving:3, tapestry:3, testament:2, pivotal:2, realm:2, multifaceted:3, underscores:2, underscore:2,
+  meticulous:3, meticulously:3, seamless:2, seamlessly:2, robust:2, leverage:2, leveraging:2, foster:2, fostering:2,
+  comprehensive:2, holistic:2, myriad:3, plethora:3, paradigm:2, synergy:2, streamline:2, streamlined:2,
+  intricate:2, intricacies:3, embark:3, embarking:3, crucial:2, vital:1, notably:2, moreover:3, furthermore:3,
+  additionally:2, consequently:2, ultimately:1, showcasing:2, showcase:2, showcases:2, encompass:2, encompasses:2,
+  facilitate:2, facilitates:2, optimal:2, invaluable:2, indispensable:2, profound:2, transformative:2,
+  unprecedented:2, versatile:2, nuanced:2, bolster:2, spearhead:2, garner:2, garnered:2, resonate:2, resonates:2,
+  cultivate:2, cultivating:2, endeavor:2, imperative:2, quintessential:3, undoubtedly:2, remarkable:2, boasts:2,
+  tailored:2, empower:2, empowering:2, revolutionize:2, unparalleled:3, beacon:2, cornerstone:2, harnessing:2,
+  harness:1, elevate:2, elevating:2, utilize:2, utilizing:2, utilizes:2, navigating:2, evolving:2, landscape:1,
+  furthermore_:0, journey:1, unlock:2, unlocking:2, fostering_:0, therefore:1, however:1, essential:1,
+  significant:1, various:1, numerous:1, individuals:2, enhance:2, enhancing:2, enhanced:1, ensuring:2,
+  paramount:3, arguably:1, exemplifies:3, underscoring:3, myriads:3, adept:2, prowess:2, realm_:0, vibrant:1,
+  captivating:2, compelling:1, dynamic:1, innovative:1, cutting:1, unwavering:2, steadfast:2, plethora_:0
+};
+
+/* Multi-word AI tells. weight 2..4 */
+var AI_PHRASES = [
+  ["it is important to note",4],["it's important to note",4],["it is worth noting",4],["it's worth noting",4],
+  ["in today's fast-paced",4],["in today's world",3],["in the realm of",4],["a testament to",3],
+  ["plays a crucial role",4],["plays a vital role",4],["when it comes to",2],["not only",2],["but also",2],
+  ["in conclusion",3],["to summarize",2],["in summary",2],["first and foremost",3],["last but not least",3],
+  ["ever-evolving",4],["ever evolving",4],["the world of",2],["a wide range of",2],["a variety of",2],
+  ["serves as a",2],["aims to",2],["seeks to",2],["strive to",2],["pave the way",3],["shed light on",3],
+  ["dive into",2],["deep dive",2],["delve into",4],["at the forefront",3],["in the age of",3],
+  ["as we navigate",4],["navigate the complexities",4],["the digital age",2],["game-changer",3],
+  ["cutting-edge",3],["state-of-the-art",2],["holistic approach",3],["key takeaway",2],["in essence",3],
+  ["that being said",2],["on the other hand",1],["due to the fact",2],["in order to",1],["a myriad of",4],
+  ["a plethora of",4],["rich tapestry",4],["by understanding",2],["by leveraging",4],["one of the most",1],
+  ["is essential for",2],["is crucial for",3],["can be attributed",3],["it is essential",3],["overall,",1],
+  ["furthermore,",3],["moreover,",3],["additionally,",2],["consequently,",2],["nevertheless,",2],
+  ["in the modern",2],["fast-paced world",4],["profound impact",3],["significant impact",2],["wide array",3],
+  ["fostering a",3],["a crucial role",3],["remains a",1],["continues to",1],["has become increasingly",3]
+];
+
+/* Human tells: informal markers, hedges, discourse particles */
+var HUMAN_WORDS = ("i me my mine myself we us our we've i'm i've i'd i'll we're you you're your yeah yep nah ok okay " +
+"honestly actually basically literally kinda kinda sorta gonna wanna gotta stuff dunno whatever anyway anyways " +
+"guess maybe probably pretty really super weird crazy cool nice fun boring hate love tbh imo lol haha ugh " +
+"like just so-so meh oh hey well hmm huh sure obviously seriously").split(/\s+/);
+var HUMAN_SET = (function(){var s={},i;for(i=0;i<HUMAN_WORDS.length;i++)s[HUMAN_WORDS[i]]=1;return s;})();
+
+var FORMAL_OPENERS = ["furthermore","moreover","additionally","consequently","therefore","however","nevertheless",
+"nonetheless","thus","hence","subsequently","notably","importantly","ultimately","overall","indeed","similarly",
+"conversely","accordingly","specifically","particularly","essentially","fundamentally"];
+
+/* ============================================================
+   TEXT UTILITIES
+   ============================================================ */
+
+var ABBR = /(?:^|[\s("'])(mr|mrs|ms|dr|prof|sr|jr|st|vs|etc|inc|ltd|co|dept|fig|approx|no|vol|est|e\.g|i\.e|u\.s|a\.m|p\.m)\.$/i;
+
+function splitSentences(text){
+  var res=[], start=0, i=0, n=text.length;
+  while(i<n){
+    var ch=text[i];
+    if(ch==='.'||ch==='!'||ch==='?'||ch==='…'){
+      var j=i+1;
+      while(j<n && '.!?…"\'”’)]'.indexOf(text[j])>-1) j++;
+      var seg=text.slice(start,j);
+      if(!ABBR.test(seg.replace(/\s+$/,'')) && (j>=n || /\s/.test(text[j]))){
+        var e=j; while(e<n && /\s/.test(text[e])) e++;
+        if(seg.trim().length) res.push({start:start,end:j});
+        start=e; i=e; continue;
+      }
+      i=j; continue;
+    }
+    if(ch==='\n'){
+      if(text.slice(start,i).trim().length>0){
+        var e2=i; while(e2<n && /\s/.test(text[e2])) e2++;
+        res.push({start:start,end:i});
+        start=e2; i=e2; continue;
+      }
+    }
+    i++;
+  }
+  if(text.slice(start).trim().length>0) res.push({start:start,end:n});
+  return res;
+}
+
+function words(s){
+  var m = s.toLowerCase().match(/[a-zà-öø-ÿ]+(?:['’][a-zà-öø-ÿ]+)?/g);
+  return m || [];
+}
+
+/* Re-capitalise sentence starts without mangling abbreviations: after removing
+   a filler phrase we may be left with a lowercase opener, but "3 p.m. on
+   Tuesday" must not become "3 p. M. On Tuesday". */
+var ABBR_TAIL = /(?:^|[\s("'])(?:[a-z]|mr|mrs|ms|dr|prof|sr|jr|st|vs|etc|inc|ltd|co|dept|fig|approx|no|vol|est|e\.g|i\.e|u\.s|a\.m|p\.m)$/i;
+
+function fixCaps(s){
+  return s.replace(/(^|[.!?]["'”)]?\s+|\n[ \t]*)([a-zà-öø-ÿ])/g, function(m, pre, ch, off){
+    if(/[.!?]/.test(pre)){
+      var before = s.slice(Math.max(0, off-12), off);
+      if(ABBR_TAIL.test(before)) return m;          // abbreviation, not a sentence end
+    }
+    return pre + ch.toUpperCase();
+  });
+}
+function wordCount(s){ return words(s).length; }
+
+function syllables(w){
+  w=w.toLowerCase().replace(/[^a-z]/g,'');
+  if(w.length<=3) return 1;
+  w=w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/,'').replace(/^y/,'');
+  var m=w.match(/[aeiouy]{1,2}/g);
+  return m?m.length:1;
+}
+function mean(a){ if(!a.length) return 0; var s=0,i; for(i=0;i<a.length;i++)s+=a[i]; return s/a.length; }
+function sd(a){ if(a.length<2) return 0; var m=mean(a),s=0,i; for(i=0;i<a.length;i++)s+=(a[i]-m)*(a[i]-m); return Math.sqrt(s/(a.length-1)); }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function sig(z){ return 1/(1+Math.exp(-z)); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ============================================================
+   DETECTOR
+   ============================================================ */
+
+/* Perplexity proxy: mean surprisal of tokens against a Zipf-ranked
+   frequency table. Low value = highly predictable = AI-like. */
+function surprisal(ws){
+  if(!ws.length) return 0;
+  var tot=0,i,r,w,seen={};
+  var OOV = Math.log2(FREQ_N)+1.4;      // cost just beyond the tail of the table
+  for(i=0;i<ws.length;i++){
+    w = ws[i];
+    r = FREQ_RANK[w];
+    if(seen[w]){
+      // a word already used in this text is predictable in context, whatever its
+      // corpus frequency — this stops domain jargon from inflating the score
+      tot += Math.min(r===undefined ? OOV : Math.log2(r+2), 5.2);
+    } else if(r===undefined){
+      tot += OOV;
+    } else {
+      tot += Math.log2(r+2);            // Zipf: p ~ 1/rank
+    }
+    seen[w]=1;
+  }
+  return tot/ws.length;
+}
+
+function aiLexScore(lower, ws){
+  var hits=0, detail=[], i, w;
+  for(i=0;i<ws.length;i++){
+    w=AI_WORDS[ws[i]];
+    if(w){ hits+=w; if(detail.indexOf(ws[i])<0 && detail.length<4) detail.push(ws[i]); }
+  }
+  for(i=0;i<AI_PHRASES.length;i++){
+    if(lower.indexOf(AI_PHRASES[i][0])>-1){
+      hits+=AI_PHRASES[i][1];
+      if(detail.length<5) detail.push('"'+AI_PHRASES[i][0]+'"');
+    }
+  }
+  return {score:hits, detail:detail};
+}
+
+/* Hedging and concrete specificity: two things human writers do and generic
+   LLM prose does not. These are what keep formal human writing off the hook. */
+var HEDGE = /\b(somewhat|relatively|fairly|roughly|approximately|probably|likely|seems?|seemed|appears?|might|maybe|could|suggests?|tends? to|arguably|presumably|apparently|largely|mostly|partly|sometimes|rarely|though|although|unless|whether|i think|i'd say|in my view|not sure|hard to say|one limitation|it depends|more or less|for the most part)\b/gi;
+
+function hedgeRate(raw, n){ return n>0 ? (raw.match(HEDGE)||[]).length/n*100 : 0; }
+
+function specificityRate(raw, n){
+  if(!n) return 0;
+  var nums = (raw.match(/\b\d+(?:[.,]\d+)*\b|\b\d+%/g)||[]).length;
+  var acro = (raw.match(/\b[A-Z]{2,}\b/g)||[]).length;
+  return (nums + acro)/n*100;
+}
+
+function humanScore(lower, ws, raw){
+  var h=0, i, detail=[];
+  for(i=0;i<ws.length;i++) if(HUMAN_SET[ws[i]]) h+=1;
+  var contr=(raw.match(/[a-z]['’](t|s|re|ve|ll|d|m)\b/gi)||[]).length;
+  h += contr*2.2;
+  if(contr) detail.push('contractions');
+  if(/\b(i|we|my|our)\b/i.test(raw)) detail.push('first person');
+  if(/[!?]{1,}/.test(raw)) h+=1;
+  if(/\.\.\./.test(raw)) h+=1.5;
+  if(/\b[a-z]+\b\s+\1\b/i.test(raw)) h+=1;           // repeated word (typo-ish)
+  if(/\(.*\)/.test(raw)) h+=0.5;
+  if(ws.length<7 && ws.length>0) h+=1.2;              // short punchy fragment
+  return {score:h, detail:detail};
+}
+
+function analyze(text){
+  var segs = splitSentences(text);
+  var allW = words(text);
+  var total = allW.length;
+
+  /* ---------- per-segment raw features ---------- */
+  var items = [], lens = [], openers = {}, i;
+  for(i=0;i<segs.length;i++){
+    var raw = text.slice(segs[i].start, segs[i].end);
+    var lower = raw.toLowerCase();
+    var ws = words(raw);
+    if(!ws.length) continue;
+    lens.push(ws.length);
+    var op = ws[0];
+    openers[op]=(openers[op]||0)+1;
+    items.push({ start:segs[i].start, end:segs[i].end, raw:raw, lower:lower, ws:ws, n:ws.length, opener:op });
+  }
+  if(!items.length) return null;
+
+  /* ---------- document-level features ---------- */
+  var mLen = mean(lens), sLen = sd(lens);
+  var burstCV = mLen>0 ? sLen/mLen : 0;
+  var docSurp = surprisal(allW);
+
+  /* Burstiness, properly measured. Coefficient of variation alone is weak — the
+     sharper signal is how much length *changes from one sentence to the next*,
+     and whether the writer ever produces a short sentence at all. Measured on a
+     range of samples: AI msd ~0.14, formal human ~0.32, casual human ~0.68. */
+  var msd = 0;
+  for(i=1;i<lens.length;i++) msd += Math.abs(lens[i]-lens[i-1]);
+  msd = (lens.length>1 && mLen>0) ? msd/(lens.length-1)/mLen : 0;
+  var shortRate = lens.filter(function(l){ return l<11; }).length/lens.length;
+
+  /* clause packing: LLM prose stacks subordinate clauses at a steady rate */
+  var commaCounts = [], k2;
+  for(k2=0;k2<items.length;k2++) commaCounts.push((items[k2].raw.match(/,/g)||[]).length);
+  var commaMean = mean(commaCounts);
+
+  /* self-repetition: reuse of its own 3-grams */
+  var tri={}, rep3=0;
+  for(i=0;i+2<allW.length;i++){
+    var tk = allW[i]+' '+allW[i+1]+' '+allW[i+2];
+    if(tri[tk]) rep3++; tri[tk]=1;
+  }
+  rep3 = allW.length>0 ? rep3/allW.length : 0;
+
+  // opener repetition entropy
+  var okeys=Object.keys(openers), ent=0;
+  for(i=0;i<okeys.length;i++){ var p=openers[okeys[i]]/items.length; ent -= p*Math.log2(p); }
+  var maxEnt = Math.log2(Math.max(2,items.length));
+  var openerVar = maxEnt>0 ? ent/maxEnt : 1;        // 1 = all different, low = repetitive
+
+  // punctuation variety
+  var puncTypes = 0;
+  [/,/, /;/, /:/, /\(/, /"|“/, /!/, /\?/, /—|--/, /‘|'/].forEach(function(r){ if(r.test(text)) puncTypes++; });
+  var emRate = ((text.match(/—|\s--\s/g)||[]).length) / Math.max(1,items.length);
+  var semiRate = ((text.match(/;/g)||[]).length) / Math.max(1,items.length);
+
+  // vocabulary richness
+  var seen={}, uniq=0;
+  for(i=0;i<allW.length;i++){ if(!seen[allW[i]]){seen[allW[i]]=1;uniq++;} }
+  var ttr = total>0 ? uniq/Math.sqrt(2*total) : 0;   // root TTR, length-stable
+
+  var docAI = aiLexScore(text.toLowerCase(), allW);
+  var docHum = humanScore(text.toLowerCase(), allW, text);
+  var aiPer100 = total>0 ? docAI.score/total*100 : 0;
+  var humPer100 = total>0 ? docHum.score/total*100 : 0;
+
+  /* ---------- normalized 0..1 sub-scores (1 = maximally AI-like) ----------
+     Thresholds below are calibrated against measured human and LLM samples,
+     not guessed. See the chips row for the raw values behind each one. */
+
+  // Predictability: steady clause packing + self-repetition + elevated register.
+  // Register carries the least weight because formal humans share it.
+  var uComma = clamp((commaMean-0.55)/1.20, 0, 1);
+  var uRep3  = clamp(rep3/0.012, 0, 1);
+  var uElev  = clamp((docSurp-7.40)/1.30, 0, 1);
+  var perpScore = clamp(0.45*uComma + 0.25*uRep3 + 0.30*uElev, 0, 1);
+
+  // Burstiness: successive-length change dominates, then CV, then short-sentence use
+  var uMsd   = clamp((0.42 - msd)/0.36, 0, 1);
+  var uCv    = clamp((0.42 - burstCV)/0.34, 0, 1);
+  var uShort = clamp((0.22 - shortRate)/0.22, 0, 1);
+  var burstScore = clamp(0.42*uMsd + 0.33*uCv + 0.25*uShort, 0, 1);
+
+  var patScore   = clamp(aiPer100/6.5, 0, 1)*0.58
+                 + clamp((0.95-openerVar)/0.45,0,1)*0.14
+                 + clamp(emRate/0.55,0,1)*0.12
+                 + clamp(semiRate/0.5,0,1)*0.05
+                 + clamp((7-puncTypes)/5,0,1)*0.11;
+  patScore = clamp(patScore,0,1);
+
+  // Human signals: informal markers + hedging + concrete specifics
+  var docHedge = hedgeRate(text, total);
+  var docSpec  = specificityRate(text, total);
+  var humanish = clamp(0.50*clamp(humPer100/5.0,0,1)
+                     + 0.32*clamp(docHedge/3.2,0,1)
+                     + 0.28*clamp(docSpec/1.60,0,1), 0, 1);
+
+  /* document prior in logit space */
+  var docZ = -1.30
+    + 2.30*perpScore
+    + 3.00*burstScore
+    + 3.40*patScore
+    - 4.20*humanish
+    + 0.55*clamp((0.72-ttr)/0.32,0,1);
+  var docP = sig(docZ);
+
+  /* ---------- per-segment scoring ---------- */
+  var flagged=0, aiWords=0, paraWords=0;
+  for(i=0;i<items.length;i++){
+    var it = items[i];
+    var sSurp = surprisal(it.ws);
+    var ai = aiLexScore(it.lower, it.ws);
+    var hu = humanScore(it.lower, it.ws, it.raw);
+
+    var sComma = clamp(((it.raw.match(/,/g)||[]).length - 1)/2, 0, 1);  // clause packing
+    var sElev  = clamp((sSurp-7.5)/1.4, 0, 1);
+    var lenDev = mLen>0 ? Math.abs(it.n-mLen)/mLen : 0;
+    var sUnif  = clamp((0.45 - lenDev)/0.45, 0, 1);                 // close to mean = uniform = AI-like
+    var band   = it.n>=16 && it.n<=32 ? 1 : clamp(1-Math.abs(it.n-23)/20,0,1);
+    var sAI    = clamp(ai.score/(Math.max(6,it.n)/9), 0, 1);
+    var sHum   = clamp(hu.score/(Math.max(6,it.n)/7), 0, 1);
+    var sHedge = clamp(hedgeRate(it.raw, it.n)/3.2, 0, 1);
+    var sSpec  = clamp(specificityRate(it.raw, it.n)/1.6, 0, 1);
+    var sEm    = /—|\s--\s/.test(it.raw) ? 1 : 0;
+    var sTri   = /\b\w+,\s+\w+[\w\s]{0,18},\s+and\s+\w+/.test(it.raw) ? 1 : 0;   // rule of three
+    var sNot   = /not only[\s\S]{0,60}but also/i.test(it.raw) ? 1 : 0;
+    var sOpen  = FORMAL_OPENERS.indexOf(it.opener)>-1 ? 1 : 0;
+    var sLongW = mean(it.ws.map(function(w){return w.length;}));
+    var sCplx  = clamp((sLongW-4.3)/1.9, 0, 1);
+    var sSyl   = clamp((mean(it.ws.map(syllables))-1.42)/0.55, 0, 1);
+
+    var z = -1.60
+      + 1.30*sComma
+      + 0.60*sElev
+      + 1.15*sUnif
+      + 0.75*band
+      + 3.30*sAI
+      + 0.70*sEm
+      + 0.65*sTri
+      + 0.85*sNot
+      + 0.80*sOpen
+      + 0.70*sCplx
+      + 0.55*sSyl
+      - 3.45*sHum
+      - 1.70*sHedge
+      - 1.50*sSpec;
+
+    // blend with document prior (Turnitin-style: segment score conditioned on the whole doc)
+    var p = sig(0.62*z + 0.38*(docZ*1.05));
+
+    // very short segments are unreliable -> pull toward the document score
+    if(it.n < 8) p = 0.35*p + 0.65*docP*0.85;
+
+    /* paraphrase signature: predictable AI skeleton, but hand-tweaked surface —
+       elevated rare-synonym use and irregular length despite AI structure */
+    var oov=0,k; for(k=0;k<it.ws.length;k++) if(FREQ_RANK[it.ws[k]]===undefined) oov++;
+    var oovRate = oov/it.n;
+    var paraSig = (sComma>0.30 || sAI>0.15) && oovRate>0.32 && (lenDev>0.30 || sHum>0.12);
+
+    it.p = clamp(p,0.01,0.99);
+    it.para = paraSig;
+    it.reasons = [];
+    if(sComma>0.45) it.reasons.push('stacked subordinate clauses');
+    if(sElev>0.5) it.reasons.push('elevated, predictable register');
+    if(sUnif>0.6) it.reasons.push('uniform sentence length');
+    if(ai.detail.length) it.reasons.push('AI phrasing: '+ai.detail.slice(0,3).join(', '));
+    if(sEm) it.reasons.push('em dash');
+    if(sTri) it.reasons.push('rule-of-three list');
+    if(sNot) it.reasons.push('"not only... but also"');
+    if(sOpen) it.reasons.push('formal transition opener');
+    if(sSyl>0.6) it.reasons.push('long, multi-syllable words');
+    if(sHedge>0.4) it.reasons.push('human: hedging');
+    if(sSpec>0.4) it.reasons.push('human: concrete specifics');
+    if(hu.detail.length) it.reasons.push('human: '+hu.detail.join(', '));
+    if(!it.reasons.length) it.reasons.push('baseline statistical profile');
+
+    if(it.p>=0.5){
+      flagged++;
+      if(paraSig) paraWords+=it.n; else aiWords+=it.n;
+    }
+  }
+
+  var flaggedWords = aiWords+paraWords;
+  var pct = total>0 ? Math.round(flaggedWords/total*100) : 0;
+
+  return {
+    engine:'heuristic',
+    items:items, total:total, segments:items.length, flagged:flagged,
+    pct:pct, aiWords:aiWords, paraWords:paraWords, docP:docP,
+    perp:perpScore, burst:burstScore, pat:patScore, human:humanish,
+    surp:docSurp, cv:burstCV, mLen:mLen, sLen:sLen, ttr:ttr,
+    aiPer100:aiPer100, openerVar:openerVar, emRate:emRate,
+    msd:msd, commaMean:commaMean, rep3:rep3, shortRate:shortRate,
+    hedge:docHedge, spec:docSpec,
+    reliable: total>=150
+  };
+}
+
+/* ============================================================
+   HUMANIZER
+   ============================================================ */
+
+function rng(seed){
+  var s=seed>>>0 || 1;
+  return function(){ s^=s<<13; s>>>=0; s^=s>>17; s^=s<<5; s>>>=0; return s/4294967296; };
+}
+
+var VOCAB = [
+  ["delve into",["look at","dig into","get into","go through"]],
+  ["delving into",["looking at","digging into"]],
+  ["delve",["dig","look"]],
+  ["utilize",["use"]],["utilizes",["uses"]],["utilizing",["using"]],["utilized",["used"]],
+  ["leverage",["use"]],["leveraging",["using"]],["leverages",["uses"]],
+  ["facilitate",["help","make easier"]],["facilitates",["helps"]],["facilitating",["helping"]],
+  ["commence",["start"]],["commenced",["started"]],
+  ["endeavor",["effort","attempt"]],["endeavors",["efforts"]],
+  ["a myriad of",["many","a lot of","plenty of"]],["myriad of",["many","lots of"]],["myriad",["many"]],
+  ["a plethora of",["plenty of","a lot of","loads of"]],["plethora of",["plenty of"]],["plethora",["plenty"]],
+  ["robust",["strong","solid","sturdy"]],
+  ["comprehensive",["complete","full","thorough"]],
+  ["holistic",["overall","whole"]],
+  ["seamless",["smooth","clean"]],["seamlessly",["smoothly","cleanly","without a hitch"]],
+  ["meticulous",["careful","precise"]],["meticulously",["carefully","closely"]],
+  ["pivotal",["key","central","big"]],
+  ["crucial",["key","important","big"]],
+  ["vital",["key","necessary"]],
+  ["paramount",["the top priority","most important"]],
+  ["imperative",["necessary","a must"]],
+  ["quintessential",["classic","textbook"]],
+  ["in the realm of",["in","within"]],["the realm of",["the world of"]],["realm",["area","space"]],
+  ["a testament to",["a sign of","proof of"]],["testament to",["proof of"]],
+  ["underscores",["shows","points to","drives home"]],["underscore",["show","stress"]],
+  ["underscoring",["showing","stressing"]],
+  ["showcase",["show","display"]],["showcases",["shows"]],["showcasing",["showing"]],["showcased",["showed"]],
+  ["foster",["build","encourage","grow"]],["fosters",["builds","encourages"]],["fostering",["building","encouraging"]],
+  ["cultivate",["build","grow"]],["cultivating",["building","growing"]],
+  ["garner",["get","pick up"]],["garnered",["got","picked up"]],["garners",["gets"]],
+  ["bolster",["boost","back up"]],["bolsters",["boosts"]],["bolstering",["boosting"]],
+  ["spearhead",["lead"]],["spearheaded",["led"]],
+  ["encompass",["cover","include"]],["encompasses",["covers","includes"]],["encompassing",["covering"]],
+  ["optimal",["best","ideal"]],
+  ["invaluable",["really useful","hard to replace"]],
+  ["indispensable",["essential","hard to do without"]],
+  ["profound",["deep","serious"]],
+  ["transformative",["game changing","huge"]],
+  ["unprecedented",["record","new","one-of-a-kind"]],
+  ["unparalleled",["unmatched","the best"]],
+  ["versatile",["flexible","adaptable"]],
+  ["nuanced",["subtle","detailed"]],
+  ["intricate",["complex","tricky","detailed"]],
+  ["intricacies",["details","fine points"]],
+  ["embark on",["start","begin","take on"]],["embark upon",["start"]],["embarking on",["starting","taking on"]],
+  ["ever-evolving",["changing","shifting"]],["ever evolving",["changing"]],
+  ["cutting-edge",["new","advanced","modern"]],["state-of-the-art",["top","modern"]],
+  ["game-changer",["big deal","turning point"]],
+  ["paradigm shift",["big shift","major change"]],["paradigm",["model","approach"]],
+  ["synergy",["teamwork","overlap"]],
+  ["streamline",["simplify","tidy up"]],["streamlines",["simplifies"]],["streamlined",["simple","tightened up"]],
+  ["streamlining",["simplifying"]],
+  ["harness the power of",["use"]],["harness",["use","tap"]],["harnessing",["using","tapping"]],
+  ["unlock",["open up","get at"]],["unlocking",["opening up"]],["unlocks",["opens up"]],
+  ["elevate",["raise","lift","improve"]],["elevates",["raises","lifts"]],["elevating",["raising"]],
+  ["enhance",["improve","boost"]],["enhances",["improves","boosts"]],["enhancing",["improving"]],
+  ["enhanced",["improved","better"]],
+  ["empower",["enable","give people the tools to"]],["empowers",["lets"]],["empowering",["enabling"]],
+  ["revolutionize",["change","overhaul"]],["revolutionizing",["changing"]],
+  ["navigate",["handle","deal with","work through"]],["navigating",["handling","dealing with","working through"]],
+  ["ensure",["make sure"]],["ensures",["makes sure"]],["ensuring",["making sure"]],
+  ["individuals",["people"]],["individual",["person"]],
+  ["numerous",["many","a lot of"]],["various",["different","several"]],
+  ["obtain",["get"]],["obtains",["gets"]],["obtained",["got"]],
+  ["require",["need"]],["requires",["needs"]],["required",["needed"]],
+  ["demonstrate",["show"]],["demonstrates",["shows"]],["demonstrated",["showed"]],
+  ["assist",["help"]],["assists",["helps"]],
+  ["provide",["give","offer"]],["provides",["gives","offers"]],["providing",["giving"]],
+  ["approximately",["about","roughly","around"]],
+  ["prior to",["before"]],["subsequent to",["after"]],["in order to",["to"]],
+  ["due to the fact that",["because"]],["owing to the fact that",["because"]],
+  ["a significant number of",["many"]],["a wide range of",["lots of","all kinds of"]],
+  ["a variety of",["different","several kinds of"]],["an array of",["a set of","several"]],
+  ["when it comes to",["with","for"]],
+  ["serves as",["is","works as"]],["serve as",["are","work as"]],
+  ["aims to",["tries to","wants to"]],["aim to",["try to","want to"]],
+  ["seeks to",["tries to"]],["strive to",["try to"]],
+  ["plays a crucial role in",["matters a lot for","is key to"]],
+  ["plays a vital role in",["is key to","matters for"]],
+  ["plays a significant role in",["matters for"]],
+  ["pave the way for",["set up","open the door for"]],
+  ["shed light on",["explain","clear up"]],
+  ["at the forefront of",["leading","ahead in"]],
+  ["in the age of",["now that we have","with"]],
+  ["the digital age",["today","now"]],
+  ["profound impact",["big effect"]],["significant impact",["big effect","real effect"]],
+  ["rich tapestry",["mix","blend"]],["tapestry",["mix"]],
+  ["the fact that",["that"]],
+  ["it should be noted that",[""]],
+  ["arguably",[""]],["undoubtedly",["clearly"]],["notably",[""]],
+  ["remarkable",["impressive","notable"]],
+  ["compelling",["convincing","strong"]],
+  ["essential",["needed","key"]],
+  ["significant",["big","major","real"]],
+  ["significantly",["a lot","much"]],
+  ["subsequently",["later","then"]],
+  ["utilization",["use"]],["implementation",["rollout","setup"]],
+  ["boasts",["has"]],["tailored",["built","fitted"]],
+  ["adept at",["good at"]],["prowess",["skill"]],
+  ["unwavering",["steady"]],["steadfast",["steady"]],
+  ["captivating",["gripping"]],["vibrant",["lively"]],
+  ["in essence",["basically","put simply"]],
+  ["that being said",["still","even so"]],
+  ["first and foremost",["first off","above all"]],
+  ["last but not least",["finally","one more thing"]],
+
+  /* second pass: every remaining term the detector penalises needs an exit */
+  ["delving",["digging","looking"]],
+  ["multifaceted",["many-sided","complex"]],
+  ["embarked on",["started","took on"]],["embarked upon",["started"]],["embarks on",["starts"]],
+  ["embark",["start"]],["embarking",["starting"]],
+  ["a testament",["proof"]],["testament",["proof"]],
+  ["resonate with",["connect with","land with"]],["resonates with",["connects with"]],
+  ["resonate",["connect"]],["resonates",["connects"]],
+  ["a beacon of",["a symbol of"]],["beacon",["symbol"]],
+  ["cornerstone",["foundation","base"]],
+  ["ever-evolving landscape",["changing picture","shifting scene"]],
+  ["evolving landscape",["changing picture"]],
+  ["the landscape of",["the state of"]],["landscape",["picture","scene","field"]],
+  ["evolving",["changing","shifting"]],
+  ["this journey",["this process","all of this"]],["the journey",["the process"]],
+  ["exemplifies",["shows","is a good example of"]],
+  ["adept at",["good at","skilled at"]],["adept",["skilled"]],
+  ["myriads",["many"]],
+  ["the world of",["the field of",""]],
+  ["plays a crucial role",["matters a lot","is central"]],
+  ["plays a vital role",["is central","matters a lot"]],
+  ["plays a key role",["matters a lot"]],
+  ["a crucial role",["a big part"]],["a vital role",["a big part"]],
+  ["not only",["not just"]],["but also",["but"]],
+  ["serves as a",["is a","works as a"]],["serve as a",["are a"]],
+  ["pave the way",["set things up","open the door"]],
+  ["dive into",["get into","look at"]],["deep dive",["close look"]],
+  ["at the forefront",["out in front","leading"]],
+  ["holistic approach",["whole-picture approach","broad approach"]],
+  ["key takeaway",["main point"]],["main takeaway",["main point"]],
+  ["due to the fact",["because"]],
+  ["by understanding",["once you understand","if you understand"]],
+  ["by leveraging",["by using"]],
+  ["is essential for",["is needed for","matters for"]],
+  ["are essential for",["are needed for"]],
+  ["is crucial for",["is key for","matters for"]],
+  ["can be attributed to",["comes down to","comes from"]],
+  ["it is essential to",["you need to","it helps to"]],
+  ["a wide array of",["all kinds of","lots of"]],["wide array",["broad mix"]],
+  ["has become increasingly",["is getting more and more","has been getting more"]],
+  ["have become increasingly",["are getting more and more"]],
+  ["in the modern era",["today","now"]],["in the modern world",["today","now"]],
+  ["fast-paced world",["busy world"]],
+  ["as we navigate",["as we work through","while we deal with"]],
+  ["navigate the complexities",["work through the mess","handle the complications"]],
+  ["fostering a",["building a","growing a"]],
+  ["in the realm",["in the area"]],
+  ["harnessing the power of",["using"]],
+  ["a game changer",["a big deal"]],
+  ["the ever-changing",["the shifting"]]
+];
+
+var FILLER = [
+  /\bit is important to note that\s*/gi,
+  /\bit's important to note that\s*/gi,
+  /\bit is worth noting that\s*/gi,
+  /\bit's worth noting that\s*/gi,
+  /\bit is essential to (?:note|understand|recognize) that\s*/gi,
+  /\bin today's fast-?paced (?:world|society|environment|landscape)\s*,?\s*/gi,
+  /\bin today's (?:world|society|digital age)\s*,?\s*/gi,
+  /\bin the modern (?:world|era|age)\s*,?\s*/gi,
+  /\bas we (?:navigate|move) (?:through |into )?(?:the |this )?[\w\s]{0,22}(?:landscape|world|era)\s*,?\s*/gi,
+  /\bin conclusion\s*,?\s*/gi,
+  /\bto (?:summarize|conclude)\s*,?\s*/gi,
+  /\bin summary\s*,?\s*/gi,
+  /\boverall\s*,\s*/gi,
+  /\bneedless to say\s*,?\s*/gi,
+  /\bat the end of the day\s*,?\s*/gi,
+  /\bwhen all is said and done\s*,?\s*/gi
+];
+
+var CONTRACT = [
+  [/\bis not\b/g,"isn't"],[/\bare not\b/g,"aren't"],[/\bwas not\b/g,"wasn't"],[/\bwere not\b/g,"weren't"],
+  [/\bdo not\b/g,"don't"],[/\bdoes not\b/g,"doesn't"],[/\bdid not\b/g,"didn't"],
+  [/\bwill not\b/g,"won't"],[/\bwould not\b/g,"wouldn't"],[/\bcould not\b/g,"couldn't"],
+  [/\bshould not\b/g,"shouldn't"],[/\bcannot\b/g,"can't"],[/\bcan not\b/g,"can't"],
+  [/\bhave not\b/g,"haven't"],[/\bhas not\b/g,"hasn't"],[/\bhad not\b/g,"hadn't"],
+  [/\bmust not\b/g,"mustn't"],[/\bwe are\b/g,"we're"],[/\bthey are\b/g,"they're"],
+  [/\byou are\b/g,"you're"],[/\bit is\b/g,"it's"],[/\bthat is\b/g,"that's"],[/\bthere is\b/g,"there's"],
+  [/\bwhat is\b/g,"what's"],[/\bwho is\b/g,"who's"],[/\bhere is\b/g,"here's"],
+  [/\bwe will\b/g,"we'll"],[/\bthey will\b/g,"they'll"],[/\byou will\b/g,"you'll"],
+  [/\bwe have\b/g,"we've"],[/\bthey have\b/g,"they've"],[/\byou have\b/g,"you've"],
+  [/\bwe would\b/g,"we'd"],[/\bthey would\b/g,"they'd"],[/\byou would\b/g,"you'd"],
+  [/\bI am\b/g,"I'm"],[/\bI will\b/g,"I'll"],[/\bI have\b/g,"I've"],[/\bI would\b/g,"I'd"],
+  [/\blet us\b/g,"let's"]
+];
+
+var TRANSITIONS = [
+  [/\bFurthermore,\s*/g,["Also, ","On top of that, ","And ",""]],
+  [/\bMoreover,\s*/g,["Also, ","Plus, ","What's more, ",""]],
+  [/\bAdditionally,\s*/g,["Also, ","On top of that, ",""]],
+  [/\bConsequently,\s*/g,["So ","As a result, ","Because of that, "]],
+  [/\bTherefore,\s*/g,["So ","That means ","Because of that, "]],
+  [/\bHowever,\s*/g,["But ","Still, ","Then again, "]],
+  [/\bNevertheless,\s*/g,["Still, ","Even so, "]],
+  [/\bNonetheless,\s*/g,["Still, ","Even so, "]],
+  [/\bThus,\s*/g,["So ","That means "]],
+  [/\bHence,\s*/g,["So ","Which is why "]],
+  [/\bSubsequently,\s*/g,["Then ","After that, "]],
+  [/\bUltimately,\s*/g,["In the end, ","Finally, ",""]],
+  [/\bSimilarly,\s*/g,["The same goes for this: ","Likewise, "]],
+  [/\bConversely,\s*/g,["On the flip side, ","The opposite happens too: "]],
+  [/\bAccordingly,\s*/g,["So ","Which is why "]],
+  [/\bIn addition,\s*/g,["Also, ","Plus, "]],
+  [/\bFor instance,\s*/g,["For example, ","Say "]],
+  [/\bIn particular,\s*/g,["Especially ",""]],
+  [/\bIt is clear that\s*/g,["Clearly ",""]],
+  [/\bfurthermore,\s*/g,["also, ","and "]],
+  [/\bmoreover,\s*/g,["also, ","plus, "]],
+  [/\badditionally,\s*/g,["also, "]],
+  [/\btherefore,\s*/g,["so "]],
+  [/\bhowever,\s*/g,["but ","though "]]
+];
+
+var CASUAL = ["Honestly, ","That said, ","Still, ","To be fair, ","Look, ","Of course, ","Then again, ",
+              "For the most part, ","Mostly, ","In practice, ","Realistically, ","Broadly, "];
+
+/* A sentence already opening with a discourse marker or conjunction must not
+   get another one bolted on ("Look, finally, the Industrial Revolution..."). */
+var HAS_OPENER = /^(And|But|So|Also|Still|Plus|Then|Finally|Now|Yet|Look|Honestly|Of course|That said|To be fair|Then again|What's more|On top of that|In the end|For the most part|Mostly|In practice|Realistically|Broadly|Meanwhile|By contrast|Among them|Things like|Because of that|As a result|Likewise|Especially|There,|It )\b/;
+
+/* Verb-ish test used to decide whether a relative clause can safely become
+   its own sentence starting with "It". */
+var AUXV = /^(is|are|was|were|has|have|had|can|could|will|would|may|might|should|must|does|do|did|continues?|remains?|makes?|takes?|gives?|allows?|helps?|leads?|causes?|creates?|provides?|requires?|includes?|involves?|represents?|serves?|enables?|reflects?|shapes?)$/i;
+function verbish(w){ return AUXV.test(w) || /(?:ed|es|s)$/.test(w); }
+
+/* Picking the pronoun when a relative clause becomes its own sentence.
+   Always using "It" produced "It were previously inaccessible" — the antecedent
+   was plural ("opportunities"). Agree with the verb instead. */
+var PLURAL_VERB = /^(were|are|have|do|remain|continue|include|involve|provide|require|allow|enable|help|lead|cause|create|reflect|shape|make|take|give)$/i;
+function pronounFor(verb){ return PLURAL_VERB.test(verb||'') ? 'They ' : 'It '; }
+
+/* Split one long sentence into two. Returns null when no safe split exists —
+   the guards matter more than the coverage: a bad split changes meaning. */
+function trySplit(t, rand){
+  var body = t.replace(/\s+$/,'');
+  var trail = t.slice(body.length);
+  var commas = (body.match(/,/g)||[]).length;
+  var m;
+
+  /* ", and/but/so/yet <clause>" — rejected when the commas indicate a series */
+  if(commas<2){
+    m = body.match(/^([\s\S]{30,}?[a-z0-9)"'”]),\s+(and|but|so|yet)\s+([\s\S]{25,})$/i);
+    if(m && wordCount(m[3])>=7){
+      var leadA = {and:'', but:'But ', so:'So ', yet:'Still, '}[m[2].toLowerCase()];
+      return join(m[1], leadA, m[3], trail);
+    }
+  }
+
+  /* ", which <verb>..." -> ". It <verb>..." */
+  m = body.match(/^([\s\S]{30,}?[a-z0-9)"'”]),\s+which\s+([\s\S]{14,})$/i);
+  if(m && wordCount(m[2])>=4 && verbish(words(m[2])[0]||'')){
+    return join(m[1], pronounFor(words(m[2])[0]), m[2], trail);
+  }
+
+  /* ", where <clause>" -> ". There, <clause>" */
+  m = body.match(/^([\s\S]{28,}?[a-z0-9)"'”]),\s+where\s+([\s\S]{14,})$/i);
+  if(m && wordCount(m[2])>=4){
+    return join(m[1], 'There, ', m[2], trail);
+  }
+
+  /* "<clause> that <adverb/verb>..." -> ". It ..." */
+  m = body.match(/^([\s\S]{35,}?[a-z0-9)"'”])\s+that\s+((?:\w+ly\s+)?[\s\S]{18,})$/i);
+  if(m && wordCount(m[1])>=9 && wordCount(m[2])>=6){
+    var w0 = words(m[2]);
+    if(verbish(w0[0]||'') || (/ly$/.test(w0[0]||'') && verbish(w0[1]||''))){
+      var vb = /ly$/.test(w0[0]||'') ? w0[1] : w0[0];
+      return join(m[1], pronounFor(vb), m[2], trail);
+    }
+  }
+
+  /* ", while|although|though|whereas <clause>" */
+  m = body.match(/^([\s\S]{30,}?[a-z0-9)"'”]),\s+(while|although|though|whereas)\s+([\s\S]{18,})$/i);
+  if(m && wordCount(m[3])>=6){
+    var leadB = {while:'Meanwhile, ', although:'That said, ', though:'That said, ', whereas:'By contrast, '}[m[2].toLowerCase()];
+    return join(m[1], leadB, m[3], trail);
+  }
+
+  /* ", including|such as <list>" -> a short trailing fragment */
+  m = body.match(/^([\s\S]{25,}?[a-z0-9)"'”]),\s+(?:including|such as)\s+([\s\S]{12,})$/i);
+  if(m && wordCount(m[2])>=4){
+    var leadC = rand()<0.5 ? 'Among them: ' : 'Things like ';
+    return join(m[1], leadC, m[2], trail);
+  }
+
+  /* ", because|since <clause>" */
+  m = body.match(/^([\s\S]{30,}?[a-z0-9)"'”]),\s+(?:because|since)\s+([\s\S]{18,})$/i);
+  if(m && wordCount(m[2])>=6){
+    return join(m[1], 'That is because ', m[2], trail);
+  }
+
+  return null;
+
+  function join(head, lead, tail, tr){
+    head = head.replace(/[\s,]+$/,'');
+    if(!/[.!?]$/.test(head)) head += '.';
+    tail = tail.replace(/^\s+/,'');
+    var second = lead ? lead + tail.charAt(0).toLowerCase() + tail.slice(1)
+                      : tail.charAt(0).toUpperCase() + tail.slice(1);
+    second = second.charAt(0).toUpperCase() + second.slice(1);
+    if(!/[.!?]["'”)]?$/.test(second)) second += '.';
+    return head + ' ' + second + tr;
+  }
+}
+
+function matchCase(src, rep){
+  if(!rep) return rep;
+  if(/^[A-Z][a-z]/.test(src) || /^[A-Z]$/.test(src)) return rep.charAt(0).toUpperCase()+rep.slice(1);
+  if(/^[A-Z]+$/.test(src) && src.length>1) return rep.toUpperCase();
+  return rep;
+}
+function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function humanize(text, opt){
+  var rand = rng(opt.seed);
+  var edits = 0, stats = {vocab:0,filler:0,contract:0,punct:0,split:0,merge:0,trans:0,casual:0};
+  var out = text;
+  var pApply = opt.strength===1 ? 0.55 : (opt.strength===2 ? 0.85 : 1.0);
+
+  /* 1. filler phrase removal */
+  if(opt.filler){
+    var pFill = opt.strength===1 ? 0.75 : 1.0;
+    FILLER.forEach(function(r){
+      out = out.replace(r, function(m){
+        if(rand()>pFill) return m;
+        stats.filler++; edits++; return '';
+      });
+    });
+    // fix capitalization at sentence starts after removal
+    out = fixCaps(out);
+  }
+
+  /* 2. vocabulary swaps (longest phrases first) */
+  if(opt.vocab){
+    // Buzzword swaps are the one pass that should run to completion: a single
+    // surviving "delve" or "pivotal" re-flags the whole segment. Variety comes
+    // from picking among synonyms, not from skipping words.
+    var pVocab = opt.strength===1 ? 0.72 : 1.0;
+    var sorted = VOCAB.slice().sort(function(a,b){ return b[0].length-a[0].length; });
+    sorted.forEach(function(pair){
+      var re = new RegExp('\\b'+reEsc(pair[0]).replace(/\\?-/g,'[- ]')+'\\b','gi');
+      out = out.replace(re, function(m){
+        if(rand()>pVocab) return m;
+        var opts = pair[1];
+        var pick = opts[Math.floor(rand()*opts.length)];
+        if(pick===undefined) return m;
+        if(pick==='') { stats.vocab++; edits++; return ''; }
+        stats.vocab++; edits++;
+        return matchCase(m, pick);
+      });
+    });
+    out = out.replace(/\s{2,}/g,' ').replace(/\s+([,.;:!?])/g,'$1').replace(/,\s*,/g,',');
+  }
+
+  /* 3. transitions */
+  if(opt.trans){
+    var pTrans = opt.strength===1 ? 0.7 : 1.0;
+    TRANSITIONS.forEach(function(t){
+      out = out.replace(t[0], function(m){
+        if(rand()>pTrans) return m;
+        var opts=t[1]; var pick=opts[Math.floor(rand()*opts.length)];
+        stats.trans++; edits++; return pick;
+      });
+    });
+    out = fixCaps(out);
+  }
+
+  /* 4. punctuation cleanup */
+  if(opt.punct){
+    out = out.replace(/\s*—\s*/g, function(){ stats.punct++; edits++; return rand()<0.5 ? ', ' : ' '; });
+    out = out.replace(/\s+--\s+/g, function(){ stats.punct++; edits++; return ', '; });
+    out = out.replace(/;\s*/g, function(){ stats.punct++; edits++; return rand()<0.6 ? '. ' : ', '; });
+    out = fixCaps(out);
+    out = out.replace(/,\s*,/g,',').replace(/\s{2,}/g,' ');
+  }
+
+  /* 5. contractions */
+  if(opt.contract){
+    CONTRACT.forEach(function(c){
+      out = out.replace(c[0], function(m){
+        if(rand()>pApply*0.92) return m;
+        stats.contract++; edits++;
+        return matchCase(m, c[1]);
+      });
+    });
+  }
+
+  /* 6. burstiness: split long sentences, merge short ones */
+  if(opt.burst){
+    var segs = splitSentences(out), pieces = [], i;
+    for(i=0;i<segs.length;i++){
+      var s = out.slice(segs[i].start, segs[i].end);
+      var gapEnd = (i+1<segs.length) ? segs[i+1].start : out.length;
+      pieces.push({ text:s, gap: out.slice(segs[i].end, gapEnd) });
+    }
+    // split long sentences — this is the main lever on burstiness
+    var minSplit = opt.strength===1 ? 22 : (opt.strength===2 ? 18 : 15);
+    for(i=0;i<pieces.length;i++){
+      if(wordCount(pieces[i].text) < minSplit) continue;
+      if(rand() > pApply) continue;
+      var sp = trySplit(pieces[i].text, rand);
+      if(sp){ pieces[i].text = sp; stats.split++; edits++; }
+    }
+    // merge adjacent short sentences
+    for(i=0;i<pieces.length-1;i++){
+      var a = pieces[i].text, b = pieces[i+1].text;
+      if(wordCount(a)>=4 && wordCount(a)<=9 && wordCount(b)>=4 && wordCount(b)<=13 &&
+         /[.]$/.test(a.trim()) && !/\n/.test(pieces[i].gap) && rand()<pApply*0.6){
+        var joiner = rand()<0.5 ? ', and ' : ', so ';
+        var merged = a.trim().replace(/\.$/,'') + joiner + b.charAt(0).toLowerCase()+b.slice(1);
+        pieces[i].text = merged;
+        pieces[i].gap = pieces[i+1].gap;
+        pieces.splice(i+1,1);
+        stats.merge++; edits++;
+      }
+    }
+    // casual markers
+    if(opt.casual){
+      var lastMark = -9, usedMark = {};
+      for(i=1;i<pieces.length;i++){
+        if(i - lastMark < 2) continue;                       // never two in a row
+        if(wordCount(pieces[i].text) <= 7) continue;
+        if(HAS_OPENER.test(pieces[i].text)) continue;        // don't stack on an existing opener
+        if(rand() >= (opt.strength===3?0.30:(opt.strength===2?0.20:0.10))) continue;
+        var pool = CASUAL.filter(function(c){ return !usedMark[c]; });
+        if(!pool.length){ usedMark = {}; pool = CASUAL; }
+        var mk = pool[Math.floor(rand()*pool.length)];
+        usedMark[mk] = 1; lastMark = i;
+        pieces[i].text = mk + pieces[i].text.charAt(0).toLowerCase()+pieces[i].text.slice(1);
+        stats.casual++; edits++;
+      }
+    }
+    out = pieces.map(function(p){ return p.text + p.gap; }).join('');
+  } else if(opt.casual){
+    // casual markers without restructuring
+    var sg = splitSentences(out), buf='', prev=0;
+    for(var q=0;q<sg.length;q++){
+      buf += out.slice(prev, sg[q].start);
+      var st = out.slice(sg[q].start, sg[q].end);
+      if(q>0 && rand()<0.1 && wordCount(st)>7){
+        st = CASUAL[Math.floor(rand()*CASUAL.length)] + st.charAt(0).toLowerCase()+st.slice(1);
+        stats.casual++; edits++;
+      }
+      buf += st; prev = sg[q].end;
+    }
+    out = buf + out.slice(prev);
+  }
+
+  /* tidy */
+  out = out.replace(/[ \t]{2,}/g,' ')
+           .replace(/\s+([,.;:!?])/g,'$1')
+           .replace(/([,;:])([A-Za-z])/g,'$1 $2')   // not '.' — it would split p.m., e.g., 3.5
+           .replace(/,\s*\./g,'.')
+           .replace(/([^.])\.\s*\.(?!\.)/g,'$1.')
+           .replace(/[ \t]+\n/g,'\n')
+           .replace(/\n[ \t]+/g,'\n');
+  out = fixCaps(out);
+  out = out.replace(/\bi\b/g,'I');
+
+  return { text:out.trim(), edits:edits, stats:stats };
+}
+
+/* word-level diff for change highlighting */
+function diffHTML(a, b){
+  var A = a.match(/\S+|\s+/g)||[], B = b.match(/\S+|\s+/g)||[];
+  if(A.length>2200 || B.length>2200) return esc(b);
+  var n=A.length, m=B.length, i, j;
+  var dp = new Uint16Array((n+1)*(m+1));
+  for(i=n-1;i>=0;i--){
+    for(j=m-1;j>=0;j--){
+      dp[i*(m+1)+j] = (A[i]===B[j]) ? dp[(i+1)*(m+1)+j+1]+1
+                    : Math.max(dp[(i+1)*(m+1)+j], dp[i*(m+1)+j+1]);
+    }
+  }
+  var html='', bufNew='';
+  i=0; j=0;
+  function flush(){ if(bufNew){ html+='<span class="ch">'+esc(bufNew)+'</span>'; bufNew=''; } }
+  while(i<n && j<m){
+    if(A[i]===B[j]){ flush(); html+=esc(B[j]); i++; j++; }
+    else if(dp[(i+1)*(m+1)+j] >= dp[i*(m+1)+j+1]){ i++; }
+    else { bufNew+=B[j]; j++; }
+  }
+  while(j<m){ bufNew+=B[j]; j++; }
+  flush();
+  return html;
+}
+
+/* ============================================================
+   DETECTION ENGINE — purpose-built classifiers, in a Web Worker
+   ------------------------------------------------------------
+   No API key, no account, no per-scan cost. Two ONNX detector models are
+   downloaded once (~120MB, then cached by the browser) and run locally.
+   Your text never leaves the machine.
+
+   This used to run chatgpt-detector-roberta + e5-small-lora. Testing against
+   text I wrote fresh myself (Claude, unedited — a model this pair was never
+   trained on) exposed why that was wrong: roberta is trained on ChatGPT output
+   ONLY, so it scored every genuine Claude sample under 5% AI regardless of
+   truth — it doesn't detect AI, it detects "sounds like ChatGPT". Blending it
+   in dragged the whole ensemble down to 1/6 correct on that fresh set.
+
+   Now: tmr-ai-text-detector (trained on RAID: 11 different generator
+   architectures — GPT-2/3/4, ChatGPT, Mistral, MPT, LLaMA-2, Cohere, both base
+   and chat-tuned) does the heavy lifting, blended with e5-small-lora for
+   extra coverage on short/casual text. Measured: 12/14 on the original tuning
+   set, 5/6 on a genuinely fresh held-out set of Claude-written text — versus
+   the old roberta+e5 pair's 1/6 on that same fresh set. Diversity of TRAINING
+   generators, not which single model you're testing against, is what makes a
+   detector generalize to models it has never seen (GPT-5, Gemini, whatever's
+   next) — there's no way to special-case every current model by name.
+
+   Everything runs in a worker, off the UI thread, so the page stays live and
+   can report progress. The first version scored a 3-sentence sliding window
+   per sentence on the main thread: a 630-word document meant 58 blocking
+   inferences and killed the tab outright. Chunk size now also scales up on
+   very long documents so total passes stay bounded (see CHUNK_CHARS below).
+   ============================================================ */
+
+var MODELS = [
+  { id:'onnx-community/tmr-ai-text-detector-ONNX', name:'tmr-ai-text-detector', hot:false, weight:0.75, aiLabel:'ai' },
+  { id:'onnx-community/e5-small-lora-ai-generated-detector-ONNX', name:'e5-small-lora', hot:true, weight:0.25, aiLabel:'label_1' }
+];
+var MODEL_STATE = { status:'idle', msg:'', pct:0 };   // idle | loading | ready | error
+
+/* ---- worker source (blob module worker: works from file:// too) ---- */
+function workerSource(){
+  return [
+"let pipes=null;",
+"function aiProb(rows){",
+"  if(!Array.isArray(rows)) rows=[rows];",
+"  const hit=rows.find(r=>/chatgpt|^ai|fake|generated|machine|label_1/i.test(r.label));",
+"  return hit?hit.score:0;",
+"}",
+"let chain=Promise.resolve();",
+"self.onmessage=function(e){ chain=chain.then(()=>handle(e.data)).catch(()=>{}); };",
+"async function handle(d){",
+"  try{",
+"    if(d.cmd==='load'){",
+"      const lib=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.0');",
+"      lib.env.allowLocalModels=false;",
+"      // onnxruntime defaults its wasm pool to every core, which starves the",
+"      // UI thread even though inference is over here. Leave cores free.",
+"      try{ lib.env.backends.onnx.wasm.numThreads = Math.max(1, Math.min(4, Math.floor((navigator.hardwareConcurrency||4)/2) - 1)); }catch(_){}",
+"      pipes=[];",
+"      for(let i=0;i<d.ids.length;i++){",
+"        const n=i+1;",
+"        pipes.push(await lib.pipeline('text-classification', d.ids[i], { dtype:'q8',",
+"          progress_callback:(p)=>{",
+"            if(p && p.status==='progress' && p.total){",
+"              const pct=Math.round(p.loaded/p.total*100);",
+"              self.postMessage({type:'status', msg:'Downloading model '+n+' of '+d.ids.length+' — '+pct+'%'});",
+"            } else if(p && p.status==='ready'){",
+"              self.postMessage({type:'status', msg:'Model '+n+' ready'});",
+"            }",
+"          } }));",
+"      }",
+"      self.postMessage({type:'ready', id:d.id});",
+"      return;",
+"    }",
+"    if(d.cmd==='score'){",
+"      const texts=d.texts, B=6, out=[];",
+"      for(let s=0;s<texts.length;s+=B){",
+"        const batch=texts.slice(s,s+B), per=[];",
+"        for(let m=0;m<pipes.length;m++){",
+"          let r=await pipes[m](batch,{top_k:null});",
+"          if(batch.length===1 && !Array.isArray(r[0])) r=[r];",
+"          per.push(r.map(aiProb));",
+"        }",
+"        for(let k=0;k<batch.length;k++) out.push(per.map(a=>a[k]));",
+"        self.postMessage({type:'progress', id:d.id, done:Math.min(texts.length,s+B), total:texts.length});",
+"      }",
+"      self.postMessage({type:'scored', id:d.id, out:out});",
+"      return;",
+"    }",
+"  }catch(err){ self.postMessage({type:'error', id:d.id, err:String(err&&err.message||err).slice(0,240)}); }",
+"}"
+  ].join('\n');
+}
+
+var WORKER=null, WORKER_SEQ=0, WORKER_JOBS={}, MODEL_PROMISE=null;
+
+function spawnWorker(){
+  var url = URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));
+  var w = new Worker(url, {type:'module'});
+  w.onmessage = function(ev){
+    var d = ev.data, job = WORKER_JOBS[d.id];
+    if(d.type==='status'){ if(WORKER.onStatus) WORKER.onStatus(d.msg); return; }
+    if(d.type==='progress'){ if(job && job.onProgress) job.onProgress(d.done, d.total); return; }
+    if(d.type==='ready'){ if(job) { delete WORKER_JOBS[d.id]; job.resolve(true); } return; }
+    if(d.type==='scored'){ if(job){ delete WORKER_JOBS[d.id]; job.resolve(d.out); } return; }
+    if(d.type==='error'){ if(job){ delete WORKER_JOBS[d.id]; job.reject(new Error(d.err)); }
+                          else { MODEL_STATE.status='error'; MODEL_STATE.msg=d.err; } return; }
+  };
+  w.onerror = function(ev){
+    var msg = 'Worker failed: '+(ev.message||'unknown');
+    Object.keys(WORKER_JOBS).forEach(function(k){ WORKER_JOBS[k].reject(new Error(msg)); delete WORKER_JOBS[k]; });
+    MODEL_STATE.status='error'; MODEL_STATE.msg=msg;
+  };
+  return w;
+}
+
+function workerSend(msg, onProgress){
+  return new Promise(function(resolve,reject){
+    var id = ++WORKER_SEQ;
+    WORKER_JOBS[id] = {resolve:resolve, reject:reject, onProgress:onProgress};
+    msg.id = id;
+    WORKER.postMessage(msg);
+  });
+}
+
+function ensureModels(onStatus){
+  if(MODEL_STATE.status==='ready') return Promise.resolve(true);
+  if(MODEL_PROMISE) return MODEL_PROMISE;
+  MODEL_STATE.status='loading';
+  MODEL_PROMISE = (async function(){
+    try{
+      if(onStatus) onStatus('Starting detector...');
+      WORKER = spawnWorker();
+      WORKER.onStatus = onStatus || null;
+      await workerSend({cmd:'load', ids:MODELS.map(function(m){return m.id;})});
+      MODEL_STATE.status='ready';
+      return true;
+    }catch(e){
+      MODEL_STATE.status='error'; MODEL_STATE.msg=String(e.message||e).slice(0,220);
+      MODEL_PROMISE=null; WORKER=null;
+      throw e;
+    }
+  })();
+  return MODEL_PROMISE;
+}
+
+/* e5-small-lora runs hot: on the test set its human passages scored 53-80% and
+   its AI passages 64-95%, so blending it in raw pushed everything to a useless
+   mid-range. Recentre it onto its own observed decision point before combining.
+   NOTE: 0.72/0.07 were fitted on the same set used to report accuracy, so
+   treat them as indicative, not independently measured. */
+function recentre(model, p){ return model.hot ? sig((p - 0.72)/0.07) : p; }
+
+/* tmr carries 3x the weight of e5: on a held-out set of fresh, unedited Claude
+   text (never used to fit anything), tmr alone caught 3 of 4 AI samples and
+   e5 alone caught 1 of 4, so tmr is doing most of the cross-model work. e5
+   stays in the blend because it independently catches some short/casual AI
+   text that tmr under-scores. */
+async function scoreMany(texts, onProgress){
+  if(!texts.length) return [];
+  await ensureModels(setStatus);
+  var raw = await workerSend({cmd:'score', texts:texts}, onProgress);
+  var totalW = MODELS.reduce(function(a,m){return a+m.weight;},0);
+  return raw.map(function(per){
+    var adj = per.map(function(p,i){ return recentre(MODELS[i], p); });
+    var blended = 0;
+    for(var i=0;i<adj.length;i++) blended += adj[i]*MODELS[i].weight;
+    blended /= totalW;
+    return { per:adj, mean:blended };
+  });
+}
+async function scorePassage(txt){
+  var r = await scoreMany([txt]);
+  return r[0];
+}
+
+/* chunk helper shared by the document pass */
+function chunkBySentence(text, maxChars){
+  var segs = splitSentences(text), chunks = [], cur = 0, i;
+  if(!segs.length) return text.trim() ? [{start:0,end:text.length}] : [];
+  for(i=0;i<segs.length;i++){
+    var end = (i+1<segs.length) ? segs[i+1].start : text.length;
+    if(end - cur > maxChars && end > cur){ chunks.push({start:cur, end:segs[i].end}); cur = segs[i].end; }
+  }
+  if(cur < text.length) chunks.push({start:cur, end:text.length});
+  return chunks;
+}
+
+/* Paragraph-aware chunking, with a hard floor on chunk size.
+
+   Two failure modes had to be balanced here, both found by measurement:
+
+   1. Chunks too BIG smear distinct sources together. One char-count chunk
+      spanning an AI paragraph, a human one, and another AI one averages them
+      into a single meaningless number — the 3-paragraph demo collapsed to a
+      flat 98% everywhere instead of isolating the human middle.
+
+   2. Chunks too SMALL are simply wrong. These classifiers collapse toward
+      "AI" on short input. Measured on one identical human passage:
+        41 words -> 95% AI      63 words -> 89% AI     71 words -> 90% AI
+        126 words -> 46% AI    134 words -> 11% AI
+      The first half of a passage scoring 46% scores 91% on its own. Below
+      roughly 120 words the score carries almost no signal and is biased hard
+      toward false positives.
+
+   So: split on blank lines (a real change of source), but keep merging
+   forward until a chunk clears MIN_CHUNK_WORDS. That costs localization
+   granularity on short paragraphs, which is the honest trade — a 60-word
+   paragraph cannot be judged on its own no matter how it's sliced. */
+var MIN_CHUNK_WORDS = 120;
+
+function chunkForAnalysis(text, maxChars){
+  var re = /\n\s*\n/g, m, last = 0, paras = [];
+  while((m = re.exec(text)) !== null){ paras.push({start:last, end:m.index}); last = re.lastIndex; }
+  paras.push({start:last, end:text.length});
+  paras = paras.filter(function(p){ return text.slice(p.start,p.end).trim(); });
+  if(!paras.length) return [];
+
+  function words(c){ return wordCount(text.slice(c.start, c.end)); }
+
+  var merged = [], cur = {start:paras[0].start, end:paras[0].end, paras:1}, i;
+  for(i=1;i<paras.length;i++){
+    if(words(cur) < MIN_CHUNK_WORDS){ cur.end = paras[i].end; cur.paras++; }
+    else { merged.push(cur); cur = {start:paras[i].start, end:paras[i].end, paras:1}; }
+  }
+  merged.push(cur);
+
+  /* Fold only genuinely tiny trailing fragments (a stray line, a signature).
+     Folding a near-threshold paragraph was actively harmful: a 100-word human
+     paragraph got absorbed into an adjacent AI chunk and inherited its 98%
+     score. Anything larger keeps its own chunk and is marked unreliable
+     instead, so it can be reported honestly rather than mislabelled. */
+  while(merged.length > 1 && words(merged[merged.length-1]) < 40){
+    var runt = merged.pop();
+    merged[merged.length-1].end = runt.end;
+    merged[merged.length-1].paras += runt.paras;
+  }
+
+  var final = [];
+  merged.forEach(function(c){
+    if((c.end-c.start) > maxChars*1.5){
+      var subs = [];
+      chunkBySentence(text.slice(c.start,c.end), maxChars).forEach(function(s){
+        subs.push({start:c.start+s.start, end:c.start+s.end});
+      });
+      // sub-splitting can leave a short tail; same floor applies
+      while(subs.length > 1 && words(subs[subs.length-1]) < MIN_CHUNK_WORDS){
+        var t = subs.pop(); subs[subs.length-1].end = t.end;
+      }
+      subs.forEach(function(x){ x.paras = 1; final.push(x); });
+    } else final.push(c);
+  });
+  return final;
+}
+
+/* This used to score small 3-5 sentence sliding windows, then blend them 85%
+   into each sentence's score with the whole-document read as only a 15% nudge.
+   Debugging a false positive on a genuine, unedited Wikipedia paragraph traced
+   back to exactly that design: cutting the last sentence (packed with named
+   entities — "Artabasdos", "Abbasid Caliphate") off the rest of the paragraph
+   flipped the classifier from 6% AI to 98% AI on the same source text. Small
+   windows sever the specific, concrete detail that makes a passage read as
+   human, and the old blend let that noise dominate the headline number even
+   though the correct whole-document score was sitting right there at 11%.
+
+   Fix: score at chunk size (~1800 chars, roughly a paragraph) instead of a
+   handful of sentences. Big enough to keep the context that the classifier
+   actually relies on; small enough to still localize a mixed document (e.g.
+   two AI paragraphs around one human one) rather than smearing it into one
+   average. Every sentence takes its chunk's score directly — no separate
+   window pass, no reconciling two disagreeing numbers. */
+var CHUNK_CHARS = 1800;
+var MAX_CHUNKS = 80;    // ceiling on scoring passes for pathologically long input
+
+async function analyzeLocal(text, onStatus){
+  await ensureModels(onStatus);
+  if(onStatus) WORKER.onStatus = onStatus;
+
+  var segs = splitSentences(text);
+  var items = [], i;
+  for(i=0;i<segs.length;i++){
+    var raw = text.slice(segs[i].start, segs[i].end);
+    if(!wordCount(raw)) continue;
+    items.push({ start:segs[i].start, end:segs[i].end, raw:raw, n:wordCount(raw) });
+  }
+  if(!items.length) return null;
+
+  var chunkChars = Math.max(CHUNK_CHARS, Math.ceil(text.length / MAX_CHUNKS));
+  var chunks = chunkForAnalysis(text, chunkChars).filter(function(c){ return text.slice(c.start,c.end).trim(); });
+  var chunkTexts = chunks.map(function(c){ return text.slice(c.start,c.end); });
+
+  if(onStatus) onStatus('Scoring '+chunks.length+' passage'+(chunks.length===1?'':'s')+'...');
+  var scores = await scoreMany(chunkTexts, function(done,total){
+    if(onStatus) onStatus('Scoring passage '+done+' of '+total+'...');
+  });
+
+  var w = chunkTexts.map(function(t){ return wordCount(t); });
+  var tot = w.reduce(function(a,b){return a+b;},0) || 1;
+  var docP = 0, dPer0 = [], dPer1 = [];
+  for(i=0;i<scores.length;i++){
+    docP += scores[i].mean * w[i]/tot;
+    dPer0.push(scores[i].per[0]); dPer1.push(scores[i].per[1]);
+  }
+
+  var ci = 0;
+  var total = wordCount(text), flagged = 0, flaggedWords = 0;
+  for(i=0;i<items.length;i++){
+    var it = items[i];
+    while(ci < chunks.length-1 && it.start >= chunks[ci].end) ci++;
+    var s = scores[ci];
+    it.p = clamp(s.mean, 0.01, 0.99);
+    it.chunkWords = w[ci];
+    it.chunkIndex = ci;
+    it.chunkParas = chunks[ci].paras || 1;
+    it.chunkReliable = w[ci] >= MIN_CHUNK_WORDS;
+    it.chunkIsolated = it.chunkReliable && it.chunkParas === 1;
+    it.reasons = [ MODELS[0].name+': '+Math.round(s.per[0]*100)+'% AI',
+                   MODELS[1].name+': '+Math.round(s.per[1]*100)+'% AI' ];
+    if(!it.chunkReliable) it.reasons.push('section is only '+w[ci]+' words — too short to score reliably');
+    else if(it.chunkParas > 1) it.reasons.push('scored together with '+(it.chunkParas-1)+' adjacent paragraph'+(it.chunkParas>2?'s':'')+' — too short to score alone');
+    if(Math.abs(s.per[0]-s.per[1])>0.4) it.reasons.push('models disagree — treat with caution');
+    it.para = Math.abs(s.per[0]-s.per[1])>0.4 && it.p>=0.5;
+    if(it.p>=0.5){ flagged++; flaggedWords += it.n; }
+  }
+
+  return {
+    engine:'local', items:items, total:total, segments:items.length, flagged:flagged,
+    pct: total>0 ? Math.round(flaggedWords/total*100) : 0,
+    docP: docP, perModel: [mean(dPer0), mean(dPer1)],
+    windows: chunks.length,
+    perp: clamp(docP,0,1), burst: clamp(docP,0,1),
+    pat: clamp(mean(dPer0),0,1), human: clamp(1-docP,0,1),
+    reliable: total>=200
+  };
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+
+/* Deliberately mixed: paragraphs 1 and 3 are machine-written, paragraph 2 is
+   human. A good report should separate them rather than flag everything. */
+var SAMPLE = "In today's rapidly evolving digital landscape, artificial intelligence has become a pivotal force that is fundamentally reshaping how organizations operate. It is important to note that the integration of these technologies requires a comprehensive and holistic approach. Furthermore, companies must leverage robust frameworks in order to unlock the full potential of their data infrastructure. Moreover, the seamless implementation of machine learning models plays a crucial role in driving meaningful business outcomes. Organizations that delve into this realm often discover a myriad of opportunities that were previously inaccessible. Consequently, it is essential for leaders to foster a culture of innovation, embrace cutting-edge solutions, and cultivate the talent required to navigate this ever-evolving landscape.\n\n"
++ "I'm not sure I buy most of that, honestly. We tried three of these tools at work last year and two of them were abandoned within about four months. The problem wasn't the models. It was that nobody could agree on who owned the data, and the one person who understood the pipeline left in March. Our CTO still calls it a success in board decks, which tells you something. Maybe bigger companies have an easier time of it. From where I sat it looked like the same reorganisation we'd already done twice, with a new name on it.\n\n"
++ "Ultimately, those who embark on this transformative journey will find themselves at the forefront of their respective industries. Organizations must therefore prioritise the development of a robust data governance framework, invest in upskilling their workforce, and establish clear metrics for success. By understanding these fundamental principles, business leaders can navigate the complexities of digital transformation and position their companies for sustained growth in an increasingly competitive marketplace.";
+
+/* tabs */
+function showTab(which){
+  var tabs = {detect:['tabDetect','paneDetect'], human:['tabHuman','paneHuman']};
+  for(var k in tabs){
+    var on = (k===which);
+    $(tabs[k][0]).classList.toggle('on', on);
+    $(tabs[k][1]).classList.toggle('hide', !on);
+  }
+  window.scrollTo(0,0);
+}
+$('tabDetect').onclick=function(){ showTab('detect'); };
+$('tabHuman').onclick =function(){ showTab('human'); };
+
+/* ---- model status ---- */
+function refreshEngine(){
+  var d=$('engineDot'), t=$('engineTxt');
+  if(MODEL_STATE.status==='ready'){
+    d.className='dot ok';
+    t.innerHTML='<b>Detector ready</b> &mdash; two models running locally in your browser. Nothing is uploaded and there is no per-scan cost.';
+  } else if(MODEL_STATE.status==='loading'){
+    d.className='dot warn';
+    t.innerHTML='<span class="spin"></span>'+esc(MODEL_STATE.msg||'Loading models...');
+  } else if(MODEL_STATE.status==='error'){
+    d.className='dot bad';
+    t.innerHTML='<b>Model load failed:</b> '+esc(MODEL_STATE.msg)+' &mdash; needs internet on first run.';
+  } else {
+    d.className='dot warn';
+    t.innerHTML='Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.';
+  }
+}
+function setStatus(msg){ MODEL_STATE.msg=msg; refreshEngine(); }
+
+/* counters */
+function upd(){ $('cnt').textContent = wordCount($('inp').value)+' words'; }
+function updh(){ $('hcnt').textContent = wordCount($('hinp').value)+' words'; }
+
+$('inp').addEventListener('input',upd);
+$('hinp').addEventListener('input',updh);
+
+$('btnSample').onclick=function(){ $('inp').value=SAMPLE; upd(); runScan(); };
+$('btnClear').onclick=function(){ $('inp').value=''; upd(); $('reportCard').classList.add('hide');
+  $('flagCard').classList.add('hide'); $('resBody').classList.add('hide'); $('resEmpty').classList.remove('hide'); };
+
+function verdictFor(r){
+  var pct = r.pct;
+  var suffix = r.engine==='local' ? '' : ' Heuristic fallback: unreliable, treat as a style hint only.';
+  if(!r.reliable) return ['Too short to judge','Under 200 words. These classifiers collapse toward "AI" on short text — measured: one human passage scored 90% at 70 words and 11% at 134. Treat this as no result, not a low one.'+suffix];
+  if(pct>=80) return ['Very likely AI-generated','Token probabilities sit far above the human range across most segments.'+suffix];
+  if(pct>=55) return ['Likely AI-generated','Most segments score above the decision boundary.'+suffix];
+  if(pct>=30) return ['Mixed / possibly AI-assisted','Some segments read as machine-written, others as human.'+suffix];
+  if(pct>=12) return ['Mostly human','A few segments look predictable, but the bulk reads human.'+suffix];
+  return ['Likely human-written','Token predictability and spread both fall in the human range.'+suffix];
+}
+
+var lastResult=null;
+
+async function runScan(){
+  var text = $('inp').value;
+  if(!text.trim()){ return; }
+  var r;
+  $('btnScan').disabled = true;
+  $('resEmpty').classList.remove('hide'); $('resBody').classList.add('hide');
+  $('resEmpty').innerHTML = '<span class="spin"></span>Starting...';
+  try{
+    r = await analyzeLocal(text, function(msg){
+      setStatus(msg);
+      $('resEmpty').innerHTML = '<span class="spin"></span>'+esc(msg);
+    });
+    refreshEngine();
+  }catch(e){
+    $('resEmpty').innerHTML = '<span class="bad-txt">Detector unavailable:</span> '+esc(String(e).slice(0,160))+
+      '<br><span class="mini">First run needs internet to fetch the models. Showing weak heuristics instead.</span>';
+    r = analyze(text);
+  }
+  $('btnScan').disabled = false;
+  if(!r) return;
+  lastResult = r;
+  renderScan(text, r);
+}
+
+function renderScan(text, r){
+
+  /* gauge */
+  var C = 2*Math.PI*53;
+  $('ringArc').setAttribute('stroke-dasharray', C.toFixed(1));
+  $('ringArc').setAttribute('stroke-dashoffset', (C*(1-r.pct/100)).toFixed(1));
+  $('ringArc').setAttribute('stroke', r.pct>=55?'var(--ai)':(r.pct>=30?'var(--warn)':'var(--hum)'));
+  $('pctVal').textContent = r.pct+'%';
+  var v = verdictFor(r);
+  $('verdict').textContent = v[0];
+  $('verdict').className = 'pill ' + (r.pct>=55 ? 'hi' : (r.pct>=30 ? 'mid' : 'lo'));
+  $('verdictNote').textContent = v[1];
+
+  $('mPerp').textContent  = Math.round(r.perp*100)+'%';
+  $('mBurst').textContent = Math.round(r.burst*100)+'%';
+  $('mPat').textContent   = Math.round(r.pat*100)+'%';
+  $('mHum').textContent   = Math.round(r.human*100)+'%';
+  $('bPerp').style.width  = (r.perp*100)+'%';
+  $('bBurst').style.width = (r.burst*100)+'%';
+  $('bPat').style.width   = (r.pat*100)+'%';
+  $('bHum').style.width   = (r.human*100)+'%';
+
+  var common = '<span class="chip">Words <b>'+r.total+'</b></span>'+
+               '<span class="chip">Segments <b>'+r.segments+'</b></span>'+
+               '<span class="chip">Flagged <b>'+r.flagged+'</b></span>';
+  if(r.engine==='local'){
+    $('lPerp').textContent  = 'Combined AI probability';
+    $('lBurst').textContent = MODELS[0].name;
+    $('lPat').textContent   = MODELS[1].name;
+    $('lHum').textContent   = 'Human-range signal';
+    $('mPerp').textContent  = Math.round(r.docP*100)+'%';
+    $('mBurst').textContent = Math.round(r.perModel[0]*100)+'%';
+    $('mPat').textContent   = Math.round(r.perModel[1]*100)+'%';
+    $('mHum').textContent   = Math.round((1-r.docP)*100)+'%';
+    $('bPerp').style.width  = (r.docP*100)+'%';
+    $('bBurst').style.width = (r.perModel[0]*100)+'%';
+    $('bPat').style.width   = (r.perModel[1]*100)+'%';
+    $('bHum').style.width   = ((1-r.docP)*100)+'%';
+    var gap = Math.abs(r.perModel[0]-r.perModel[1]);
+    $('chips').innerHTML = common+
+      '<span class="chip">Document score <b>'+Math.round(r.docP*100)+'%</b></span>'+
+      '<span class="chip">'+esc(MODELS[0].name)+' <b>'+Math.round(r.perModel[0]*100)+'%</b></span>'+
+      '<span class="chip">'+esc(MODELS[1].name)+' <b>'+Math.round(r.perModel[1]*100)+'%</b></span>'+
+      (gap>0.4 ? '<span class="chip bad-txt">Models disagree by '+Math.round(gap*100)+'pts &mdash; low confidence</span>'
+               : '<span class="chip ok-txt">Models agree</span>')+
+      '<span class="chip">Runs locally <b>no upload</b></span>';
+  } else {
+    $('lPerp').textContent  = 'Predictability — weak proxy';
+    $('lBurst').textContent = 'Uniformity — low burstiness';
+    $('lPat').textContent   = 'AI phrasing & structure';
+    $('lHum').textContent   = 'Human signals';
+    $('chips').innerHTML = common+
+      '<span class="chip">Burstiness CV <b>'+r.cv.toFixed(2)+'</b></span>'+
+      '<span class="chip">Rhythm change <b>'+r.msd.toFixed(2)+'</b></span>'+
+      '<span class="chip">Sentence len <b>'+r.mLen.toFixed(1)+'&plusmn;'+r.sLen.toFixed(1)+'</b></span>'+
+      '<span class="chip">Commas/sentence <b>'+r.commaMean.toFixed(2)+'</b></span>'+
+      '<span class="chip">Avg surprisal <b>'+r.surp.toFixed(2)+'</b></span>'+
+      '<span class="chip bad-txt">Heuristic engine &mdash; unreliable</span>';
+  }
+
+  $('resEmpty').classList.add('hide');
+  $('resBody').classList.remove('hide');
+
+  /* segment report */
+  var html='', prev=0, i, flags=[];
+  for(i=0;i<r.items.length;i++){
+    var it=r.items[i];
+    html += esc(text.slice(prev, it.start));
+    var cls = it.p>=0.5 ? (it.para?'seg para':'seg ai') : 'seg';
+    var tip = Math.round(it.p*100)+'% AI &mdash; '+it.reasons.slice(0,3).join('; ');
+    html += '<span class="'+cls+'" title="'+esc(tip.replace(/&mdash;/g,'-'))+'">'+esc(text.slice(it.start,it.end))+'</span>';
+    prev = it.end;
+    if(it.p>=0.5) flags.push(it);
+  }
+  html += esc(text.slice(prev));
+  $('report').innerHTML = html;
+  $('reportCard').classList.remove('hide');
+
+  flags.sort(function(a,b){ return b.p-a.p; });
+  if(flags.length){
+    var fh='';
+    for(i=0;i<Math.min(flags.length,25);i++){
+      var f=flags[i];
+      var t=f.raw.trim(); if(t.length>190) t=t.slice(0,190)+'...';
+      fh += '<div class="flagitem'+(f.para?' para':'')+'"><span class="pct">'+Math.round(f.p*100)+'%</span>'+
+            esc(t)+'<span class="why">'+esc(f.reasons.join(' &middot; ').replace(/&middot;/g,'|'))+'</span></div>';
+    }
+    $('flaglist').innerHTML = fh;
+    $('flagCard').classList.remove('hide');
+  } else {
+    $('flagCard').classList.add('hide');
+  }
+}
+$('btnScan').onclick = runScan;
+
+$('btnToHuman').onclick=function(){
+  $('hinp').value = $('inp').value; updh();
+  $('tabHuman').click();
+  runHumanize();
+};
+
+/* strength */
+var strength = 2;
+Array.prototype.forEach.call($('strength').children, function(b){
+  b.onclick=function(){
+    Array.prototype.forEach.call($('strength').children,function(x){x.classList.remove('on');});
+    b.classList.add('on'); strength=parseInt(b.dataset.s,10);
+    $('strengthNote').innerHTML = strength===1
+      ? 'Light &mdash; conservative. Only the clearest AI vocabulary and punctuation tells are touched.'
+      : strength===2
+      ? 'Balanced &mdash; swaps AI vocabulary, fixes punctuation and varies sentence length while keeping the original tone.'
+      : 'Aggressive &mdash; applies every enabled transformation. Rewrites read looser and more casual; check the output.';
+  };
+});
+
+/* scope: flagged-only (default) vs whole text. Whichever is picked, the
+   after-score is still measured for real — this toggle changes what gets
+   edited, not what gets claimed about the result. */
+var scope = 'flagged';
+Array.prototype.forEach.call($('scope').children, function(b){
+  b.onclick=function(){
+    Array.prototype.forEach.call($('scope').children,function(x){x.classList.remove('on');});
+    b.classList.add('on'); scope = b.dataset.scope;
+    $('scopeNote').innerHTML = scope==='flagged'
+      ? '<b style="color:var(--tx)">Flagged only</b> &mdash; the detector runs first, and anything it reads as human is copied through unchanged. Keeps your wording and voice everywhere except the sections it flagged.'
+      : '<b style="color:var(--tx)">Entire text</b> &mdash; every sentence goes through the rewriter, including parts already reading as human. Your original wording is not preserved anywhere. Measured risk, not hypothetical: on one mixed document this made the score go <b>up</b> (69%&rarr;97%), because this detector was adversarially trained to catch mechanically-paraphrased text in general &mdash; rewriting prose that had nothing wrong with it can trip that same signal. &ldquo;Flagged only&rdquo; doesn&rsquo;t have this failure mode, because it leaves human-passing text alone instead of touching it.';
+  };
+});
+
+var seed = 1337;
+
+/* Score a candidate with whichever engine is live. The API path is the whole
+   point: it measures the real objective instead of the humanizer grading its
+   own homework against features it was built to game. */
+async function scoreCandidate(t){
+  try{
+    await ensureModels(setStatus);
+    var s = await scorePassage(t);
+    return Math.round(s.mean*100);
+  }catch(e){ var h=analyze(t); return h?h.pct:100; }
+}
+
+/* TARGETED rewriting. The humanizer used to rewrite the entire input, which is
+   wrong for the actual use case: if 90% of an essay is genuinely someone's own
+   writing, running it through here shouldn't touch their voice at all. So:
+   detect first, then rewrite ONLY the sections the detector flagged, and splice
+   them back into the original text byte-for-byte around the untouched parts.
+
+   Granularity is whatever the detector scores as a unit — a paragraph, not a
+   sentence. That's deliberate: sentence-level scoring proved unreliable (see the
+   chunking note above), so flagging a lone sentence would be false precision. */
+async function runHumanize(){
+  var src = $('hinp').value;
+  if(!src.trim()) return;
+  var baseOpt = {
+    strength: strength,
+    vocab: $('oVocab').checked, filler: $('oPhrase').checked, contract: $('oContr').checked,
+    punct: $('oPunct').checked, burst: $('oBurst').checked, trans: $('oTrans').checked,
+    casual: $('oCasual').checked
+  };
+
+  $('btnHum').disabled = true; $('btnReroll').disabled = true;
+  $('outCard').classList.remove('hide');
+  $('out').innerHTML = '<span class="spin"></span>Finding flagged sections...';
+
+  /* 1. detect, so we know what to leave alone */
+  var det = null;
+  try{
+    det = await analyzeLocal(src, function(m){ $('out').innerHTML = '<span class="spin"></span>'+esc(m); });
+  }catch(e){ det = null; }
+
+  var totalWords = wordCount(src);
+  var before = det ? Math.round(det.docP*100) : await scoreCandidate(src);
+
+  /* 2. contiguous runs of flagged sentences become rewrite regions.
+     A section is only eligible if the detector could actually judge it: under
+     ~120 words these classifiers collapse toward "AI" regardless of author, so
+     rewriting on that basis would mangle genuine writing on a coin-flip. Those
+     sections are counted and reported, never touched. */
+  var regions = [], prevFlagged = false, i, k;
+  var skippedShort = 0, skippedMerged = 0, seenSkip = {};
+  if(scope==='all'){
+    regions.push({start:0, end:src.length, chunk:-1});
+  } else if(det){
+    for(i=0;i<det.items.length;i++){
+      var it = det.items[i];
+      var wantsRewrite = it.p >= 0.5;
+      /* Only rewrite a section we can actually attribute: long enough to score,
+         AND corresponding to a single source paragraph. A chunk built from two
+         merged short paragraphs may be AI in one half and the writer's own words
+         in the other — verified, that's exactly how a human paragraph inherited
+         an adjacent AI paragraph's 98%. Not attributable means not touched. */
+      var eligible = wantsRewrite && it.chunkIsolated === true;
+      if(wantsRewrite && !eligible){
+        var key = 'c' + it.chunkIndex;          // one count per section, not per sentence
+        if(!seenSkip[key]){
+          seenSkip[key] = 1;
+          if(it.chunkReliable === false) skippedShort++; else skippedMerged++;
+        }
+      }
+      /* One region per section. Letting a region span two flagged sections
+         swallowed the blank line between them and glued two paragraphs into
+         one — the rewriter trims and normalises whitespace inside whatever it
+         is handed, so paragraph breaks must stay outside the rewritten span. */
+      if(eligible){
+        var sameSection = prevFlagged && regions.length &&
+                          regions[regions.length-1].chunk === it.chunkIndex;
+        if(sameSection) regions[regions.length-1].end = it.end;
+        else regions.push({start:it.start, end:it.end, chunk:it.chunkIndex});
+      }
+      prevFlagged = eligible;
+    }
+  } else {
+    regions.push({start:0, end:src.length});   // detector unavailable: fall back to whole text
+  }
+  var skippedTotal = skippedShort + skippedMerged;
+  function skipChip(){
+    if(!skippedTotal) return '';
+    var bits = [];
+    if(skippedShort) bits.push(skippedShort+' too short to judge');
+    if(skippedMerged) bits.push(skippedMerged+" couldn't be isolated from neighbouring paragraphs");
+    return '<span class="chip bad-txt">Left alone: '+bits.join(', ')+'</span>';
+  }
+
+  /* nothing to rewrite — leave their writing completely alone */
+  if(!regions.length){
+    $('beforeScore').textContent = before+'%';
+    $('afterScore').textContent  = before+'%';
+    $('afterScore').style.color  = 'var(--ok)';
+    $('editCount').textContent   = '0';
+    $('out').innerHTML = esc(src);
+    $('hchips').innerHTML = skippedTotal
+      ? skipChip()+'<span class="chip">Nothing was changed &mdash; rewriting text the detector can&rsquo;t attribute would risk your own writing</span>'
+      : '<span class="chip ok-txt">No AI-flagged sections &mdash; your text was left untouched</span>';
+    $('btnHum').disabled = false; $('btnReroll').disabled = false;
+    window.__humanized = src;
+    return;
+  }
+
+  /* 3. rewrite each flagged region on its own, best-of-N against the detector */
+  var tries = (MODEL_STATE.status==='ready') ? (strength===3 ? 5 : 3) : 1;
+  var totals = {vocab:0,filler:0,contract:0,punct:0,split:0,merge:0,trans:0,casual:0};
+  var totalEdits = 0, rewrittenWords = 0, pieces = [];
+
+  for(var r=0;r<regions.length;r++){
+    var regionText = src.slice(regions[r].start, regions[r].end);
+    rewrittenWords += wordCount(regionText);
+    var best = null;
+    for(i=0;i<tries;i++){
+      var opt = {}; for(k in baseOpt) opt[k]=baseOpt[k];
+      opt.seed = (seed + r*104729 + i*7919) >>> 0;
+      var cand = humanize(regionText, opt);
+      $('out').innerHTML = '<span class="spin"></span>Section '+(r+1)+' of '+regions.length+
+                           ', variant '+(i+1)+' of '+tries+'...';
+      var sc = await scoreCandidate(cand.text);
+      if(!best || sc < best.score) best = {res:cand, score:sc};
+      if(sc <= 5) break;
+    }
+    pieces.push(best.res.text);
+    totalEdits += best.res.edits;
+    for(k in totals) totals[k] += best.res.stats[k];
+  }
+
+  /* 4. splice rewritten regions back into the untouched original */
+  var out = '', prev = 0;
+  for(r=0;r<regions.length;r++){
+    out += src.slice(prev, regions[r].start);
+    out += pieces[r];
+    prev = regions[r].end;
+  }
+  out += src.slice(prev);
+
+  /* 5. rescore the whole document so before/after are measured the same way */
+  var after = before;
+  try{
+    var post = await analyzeLocal(out, function(){});
+    if(post) after = Math.round(post.docP*100);
+  }catch(e){ after = await scoreCandidate(out); }
+
+  $('beforeScore').textContent = before+'%';
+  $('afterScore').textContent  = after+'%';
+  $('afterScore').style.color  = after>=55 ? 'var(--ai)' : (after>=30 ? 'var(--warn)' : 'var(--ok)');
+  $('editCount').textContent   = totalEdits;
+  $('out').innerHTML = diffHTML(src, out);
+
+  var untouchedPct = totalWords>0 ? Math.round((1 - rewrittenWords/totalWords)*100) : 0;
+  $('hchips').innerHTML =
+    '<span class="chip ok-txt">Sections rewritten <b>'+regions.length+'</b></span>'+
+    '<span class="chip ok-txt">Your text left untouched <b>'+untouchedPct+'%</b></span>'+
+    skipChip()+
+    (untouchedPct===0 ? '<span class="chip bad-txt">Whole document scored as one section</span>' : '')+
+    '<span class="chip">Vocabulary <b>'+totals.vocab+'</b></span>'+
+    '<span class="chip">Filler cut <b>'+totals.filler+'</b></span>'+
+    '<span class="chip">Contractions <b>'+totals.contract+'</b></span>'+
+    '<span class="chip">Punctuation <b>'+totals.punct+'</b></span>'+
+    '<span class="chip">Split <b>'+totals.split+'</b></span>'+
+    '<span class="chip">Transitions <b>'+totals.trans+'</b></span>'+
+    (MODEL_STATE.status==='ready'
+       ? '<span class="chip">Scored by '+MODELS.length+' detector models</span>'
+       : '<span class="chip bad-txt">Detector unavailable &mdash; rewrote everything</span>');
+  $('btnHum').disabled = false; $('btnReroll').disabled = false;
+
+  $('outCard').classList.remove('hide');
+  window.__humanized = out;
+}
+$('btnHum').onclick=function(){ seed = 1337; runHumanize(); };
+$('btnReroll').onclick=function(){ seed = Math.floor(Math.random()*1e9); runHumanize(); };
+
+$('btnCopy').onclick=function(){
+  var t = window.__humanized||'';
+  navigator.clipboard.writeText(t).then(function(){
+    var b=$('btnCopy'); var o=b.textContent; b.textContent='Copied'; setTimeout(function(){b.textContent=o;},1400);
+  });
+};
+$('btnDl').onclick=function(){
+  var blob = new Blob([window.__humanized||''],{type:'text/plain'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='humanized.txt'; a.click();
+};
+$('btnRecheck').onclick=function(){
+  $('inp').value = window.__humanized||''; upd(); $('tabDetect').click(); runScan();
+};
+
+/* theme: follow the OS by default, remember an explicit choice */
+(function(){
+  var saved = null;
+  try{ saved = localStorage.getItem('detexa.theme'); }catch(e){}
+  if(saved) document.documentElement.setAttribute('data-theme', saved);
+  $('themeBtn').onclick = function(){
+    var cur = document.documentElement.getAttribute('data-theme');
+    if(!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    var next = cur==='dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('detexa.theme', next); }catch(e){}
+  };
+})();
+
+upd(); updh(); refreshEngine();
+</script>
+</body>
+</html>
