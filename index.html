@@ -2106,7 +2106,14 @@ var PANES = {
   human:   {tab:'tabHuman',  pane:'paneHuman'},
   writing: {tab:null,        pane:'paneWriting'}
 };
-function showTab(which){
+/* Routing lives in the URL hash (#home / #detect / #human / #writing) rather
+   than only in JS state, for two reasons a plain classList toggle can't give:
+   reloading the page must land back on the same pane instead of resetting to
+   Home, and the browser's back button must step through in-app navigation
+   instead of leaving the app on the first press. Both fall out for free once
+   "which pane is showing" and "what's in the URL" are the same fact — the
+   hash change is what triggers the render, not the click handler directly. */
+function renderPane(which){
   if(!PANES[which]) which='home';
   for(var k in PANES){
     var on = (k===which), cfg = PANES[k];
@@ -2117,6 +2124,16 @@ function showTab(which){
   $('engineBar').classList.toggle('hide', which==='home' || which==='writing');
   window.scrollTo(0,0);
 }
+function showTab(which){
+  if(!PANES[which]) which='home';
+  if(location.hash.slice(1) === which) renderPane(which);   // already there — no hash change fires
+  else location.hash = which;                                // pushes a history entry; hashchange renders it
+}
+window.addEventListener('hashchange', function(){
+  renderPane(location.hash.slice(1) || 'home');
+});
+renderPane(location.hash.slice(1) || 'home');   // land on a reload exactly where the URL says, not always Home
+
 $('tabHome').onclick=function(){ showTab('home'); };
 $('tabDetect').onclick=function(){ showTab('detect'); };
 $('tabHuman').onclick =function(){ showTab('human'); };
