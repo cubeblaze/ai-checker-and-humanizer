@@ -1,19 +1,20 @@
 /**
  * Klarity.ai backend proxy — Cloudflare Worker
  *
- * Runs AI generation through Cloudflare Workers AI (the `AI` binding below),
- * so there is NO API key anywhere in this project — not for students, not
- * for the site owner. The binding authenticates automatically through
- * whichever Cloudflare account the Worker is deployed under. Also fetches
- * pasted article URLs server-side (browsers block this via CORS).
+ * Holds the Gemini API key as a Cloudflare secret (set by the site owner via
+ * `wrangler secret put GEMINI_API_KEY` — never hardcoded here) and proxies
+ * AI-generation requests from the frontend so students never see or enter a
+ * key. Also fetches pasted article URLs server-side (browsers block this via
+ * CORS).
  *
  * Deploy: see DEPLOY.md in this folder.
  */
 
-const AI_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const MAX_PROMPT_CHARS = 100000;   // ~25k tokens guardrail (Workers AI context is smaller than cloud frontier models)
-const MAX_OUTPUT_TOKENS = 4096;
+const MAX_PROMPT_CHARS = 200000;   // ~50k tokens guardrail
+const MAX_OUTPUT_TOKENS = 8192;
 const RATE_LIMIT_PER_HOUR = 40;    // per-IP, generous for one student, caps abuse
 
 function corsHeaders(origin) {
@@ -66,8 +67,8 @@ export default {
 };
 
 async function handleGenerate(request, env, headers) {
-  if (!env.AI) {
-    return json({ error: 'The Workers AI binding is not set up yet. See DEPLOY.md.' }, 500, headers);
+  if (!env.GEMINI_API_KEY) {
+    return json({ error: 'Server is not configured with an API key yet.' }, 500, headers);
   }
 
   let body;
@@ -86,31 +87,46 @@ async function handleGenerate(request, env, headers) {
     return json({ error: 'Input is too large for this endpoint.' }, 400, headers);
   }
 
-  const messages = [];
-  var systemText = system || '';
-  if (wantsJson) {
-    systemText += (systemText ? ' ' : '') + 'Respond with ONLY the raw JSON described above — no markdown code fences, no commentary before or after it.';
-  }
-  if (systemText) messages.push({ role: 'system', content: systemText });
-  messages.push({ role: 'user', content: prompt });
-
-  let data;
-  try {
-    data = await env.AI.run(AI_MODEL, {
-      messages,
-      max_tokens: Math.min(maxOutputTokens || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS),
+  const payload = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      maxOutputTokens: Math.min(maxOutputTokens || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS),
       temperature: 0.4,
+    },
+  };
+  if (system) {
+    payload.systemInstruction = { role: 'system', parts: [{ text: system }] };
+  }
+  if (wantsJson) {
+    payload.generationConfig.responseMimeType = 'application/json';
+  }
+
+  let resp;
+  try {
+    resp = await fetch(`${GEMINI_URL}?key=${env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
   } catch (e) {
-    return json({ error: 'Could not reach the AI model: ' + String(e.message || e) }, 502, headers);
+    return json({ error: 'Could not reach the AI provider: ' + String(e.message || e) }, 502, headers);
   }
 
-  const text = (data && (data.response || data.result?.response)) || '';
+  const data = await resp.json();
+  if (!resp.ok) {
+    const msg = data?.error?.message || `Upstream error (${resp.status})`;
+    return json({ error: msg }, resp.status >= 400 && resp.status < 600 ? resp.status : 502, headers);
+  }
+
+  const candidate = data.candidates && data.candidates[0];
+  const finishReason = candidate?.finishReason;
+  const text = candidate?.content?.parts?.map((p) => p.text || '').join('') || '';
+
   if (!text) {
     return json({ error: 'The AI returned an empty response. Try again.' }, 502, headers);
   }
 
-  return json({ text }, 200, headers);
+  return json({ text, finishReason }, 200, headers);
 }
 
 async function handleFetchUrl(request, headers) {
