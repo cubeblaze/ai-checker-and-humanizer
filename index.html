@@ -4761,6 +4761,14 @@ function pcTargetMinutes(){
   return PC_LENGTH_MINUTES[pcState.settings.length] || 10;
 }
 
+// Script is JSON with per-turn object overhead (braces/keys/quotes), not
+// just raw spoken words, so the token budget has to be well above the
+// spoken-word count or long scripts get cut off mid-JSON and fail to parse.
+function pcScriptTokenBudget(){
+  var targetWords = Math.round(pcTargetMinutes()*150);
+  return Math.min(32000, Math.max(4096, Math.ceil(targetWords*4) + 800));
+}
+
 function buildPodcastScriptPrompt(){
   var s = pcState.settings;
   var minutes = pcTargetMinutes();
@@ -4833,7 +4841,7 @@ async function runPodcastScriptGen(){
   $('btnPcGenerateScript').disabled = true;
   try{
     pcSetStatus('Analyzing notes and organizing concepts…');
-    var result = await callBackendJSON(buildPodcastScriptPrompt(), { maxOutputTokens: 4096 });
+    var result = await callBackendJSON(buildPodcastScriptPrompt(), { maxOutputTokens: pcScriptTokenBudget() });
     pcState.title = result.title || 'Untitled podcast';
     pcState.subject = result.subject || 'General';
     pcState.turns = (result.turns||[]).map(function(t){ return {speaker: t.speaker===2?2:1, text:t.text||''}; });

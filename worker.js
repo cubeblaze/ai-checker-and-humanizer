@@ -15,7 +15,7 @@ const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interaction
 const TTS_MODEL = 'gemini-3.1-flash-tts-preview';
 
 const MAX_PROMPT_CHARS = 200000;   // ~50k tokens guardrail
-const MAX_OUTPUT_TOKENS = 8192;
+const MAX_OUTPUT_TOKENS = 32000; // podcast scripts are JSON with per-turn overhead, not just raw prose
 const RATE_LIMIT_PER_HOUR = 40;    // per-IP, generous for one student, caps abuse
 
 function corsHeaders(origin) {
