@@ -10,8 +10,8 @@
  * Deploy: see DEPLOY.md in this folder.
  */
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
 
 const MAX_PROMPT_CHARS = 200000;   // ~50k tokens guardrail
 const MAX_OUTPUT_TOKENS = 8192;
@@ -88,45 +88,67 @@ async function handleGenerate(request, env, headers) {
   }
 
   const payload = {
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: {
-      maxOutputTokens: Math.min(maxOutputTokens || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS),
-      temperature: 0.4,
+    model: GEMINI_MODEL,
+    input: prompt,
+    generation_config: {
+      max_output_tokens: Math.min(maxOutputTokens || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS),
     },
   };
-  if (system) {
-    payload.systemInstruction = { role: 'system', parts: [{ text: system }] };
-  }
+  var systemText = system || '';
   if (wantsJson) {
-    payload.generationConfig.responseMimeType = 'application/json';
+    systemText += (systemText ? ' ' : '') + 'Respond with ONLY the raw JSON described above — no markdown code fences, no commentary before or after it.';
+  }
+  if (systemText) {
+    payload.system_instruction = systemText;
   }
 
   let resp;
   try {
-    resp = await fetch(`${GEMINI_URL}?key=${env.GEMINI_API_KEY}`, {
+    resp = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': env.GEMINI_API_KEY,
+      },
       body: JSON.stringify(payload),
     });
   } catch (e) {
+    console.error('generate: network error reaching Gemini', { endpoint: GEMINI_URL, model: GEMINI_MODEL, error: String(e.message || e) });
     return json({ error: 'Could not reach the AI provider: ' + String(e.message || e) }, 502, headers);
   }
 
-  const data = await resp.json();
+  const rawText = await resp.text();
+  let data;
+  try { data = JSON.parse(rawText); } catch { data = null; }
   if (!resp.ok) {
+    const reason = data?.error?.details?.find((d) => d.reason)?.reason || null;
+    console.error('generate: upstream error', {
+      endpoint: GEMINI_URL,
+      model: GEMINI_MODEL,
+      httpStatus: resp.status,
+      googleErrorStatus: data?.error?.status || null,
+      googleErrorReason: reason,
+    });
     const msg = data?.error?.message || `Upstream error (${resp.status})`;
     return json({ error: msg }, resp.status >= 400 && resp.status < 600 ? resp.status : 502, headers);
   }
 
-  const candidate = data.candidates && data.candidates[0];
-  const finishReason = candidate?.finishReason;
-  const text = candidate?.content?.parts?.map((p) => p.text || '').join('') || '';
+  // The Interactions API returns a `steps` array mixing "thought" steps and
+  // a "model_output" step; the model_output step's content array carries the
+  // actual text blocks. (Verified against a live response — the docs implied
+  // a flat {output_text} shape that isn't what the API actually returns.)
+  const outputStep = (data.steps || []).find((s) => s.type === 'model_output');
+  const text = (outputStep?.content || [])
+    .filter((c) => c.type === 'text')
+    .map((c) => c.text || '')
+    .join('') || data.output_text || '';
 
   if (!text) {
+    console.error('generate: no text extracted from response', { stepsTypes: (data.steps || []).map((s) => s.type) });
     return json({ error: 'The AI returned an empty response. Try again.' }, 502, headers);
   }
 
-  return json({ text, finishReason }, 200, headers);
+  return json({ text }, 200, headers);
 }
 
 async function handleFetchUrl(request, headers) {
