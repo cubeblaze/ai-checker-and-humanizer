@@ -1836,7 +1836,7 @@ window.dispatchEvent(new Event('kauth-ready'));
     <form id="authForm" novalidate>
       <label class="auth-field hide" id="authNameWrap">
         <span>Name</span>
-        <input type="text" id="authName" autocomplete="name" placeholder="Jane Doe">
+        <input type="text" id="authName" autocomplete="name" placeholder="Jane Doe" required>
       </label>
       <label class="auth-field">
         <span>Email</span>
@@ -5443,10 +5443,11 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
     e.preventDefault();
     clearErr();
     var email = emailInput.value.trim(), pass = passInput.value;
+    var name = nameInput.value.trim();
+    if(mode === 'signup' && !name){ showErr('Please enter your name.'); nameInput.focus(); return; }
     if(!email || !pass){ showErr('Please fill in every field.'); return; }
     if(mode === 'signup' && pass.length < 6){ showErr('Password should be at least 6 characters.'); return; }
     submitBtn.disabled = true;
-    var name = nameInput.value.trim();
     var task = mode === 'signup' ? window.KAuth.signUp(name, email, pass) : window.KAuth.signIn(email, pass);
     task.then(function(cred){
       submitBtn.disabled = false;
@@ -5457,6 +5458,7 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
       // push the freshly-named user in directly instead of waiting for it.
       if(cred && cred.user){ CURRENT_USER = cred.user; updateAuthNav(); }
       showToast(mode === 'signup' ? 'Account created — welcome to Klarity!' : 'Welcome back!');
+      showTab('dashboard');
     }).catch(function(err){
       submitBtn.disabled = false;
       showErr(ERR_MSGS[err && err.code] || 'Something went wrong — please try again.');
@@ -5473,6 +5475,7 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
       closeModal();
       if(cred && cred.user){ CURRENT_USER = cred.user; updateAuthNav(); }
       showToast('Welcome to Klarity!');
+      showTab('dashboard');
     }).catch(function(err){
       btn.disabled = false;
       if(err && err.code === 'auth/popup-closed-by-user') return; // user backed out — not an error worth surfacing
