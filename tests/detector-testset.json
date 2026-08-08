@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ai-01-business-generic",
+    "label": 1,
+    "genre": "AI (generic business prose)",
+    "text": "In today's rapidly evolving digital landscape, artificial intelligence has become a pivotal force that is fundamentally reshaping how organizations operate. It is important to note that the integration of these technologies requires a comprehensive and holistic approach. Furthermore, companies must leverage robust frameworks in order to unlock the full potential of their data infrastructure. Moreover, the seamless implementation of machine learning models plays a crucial role in driving meaningful business outcomes. Organizations that delve into this realm often discover a myriad of opportunities that were previously inaccessible. Consequently, it is essential for leaders to foster a culture of innovation, embrace cutting-edge solutions, and cultivate the talent required to navigate this ever-evolving landscape. In addition, stakeholders must recognize that sustainable transformation is not merely a technological endeavor but a comprehensive organizational shift that touches every facet of the enterprise."
+  },
+  {
+    "id": "ai-02-academic-summary",
+    "label": 1,
+    "genre": "AI (academic-style summary)",
+    "text": "Climate change represents one of the most pressing challenges of our time, with far-reaching implications for ecosystems, economies, and human societies. It is widely recognized that greenhouse gas emissions, driven primarily by the combustion of fossil fuels, have led to a significant increase in global average temperatures. This warming trend has, in turn, contributed to a range of adverse effects, including rising sea levels, more frequent extreme weather events, and disruptions to agricultural systems. Furthermore, it is important to emphasize that vulnerable populations, particularly those in developing nations, often bear a disproportionate share of the burden associated with these changes. Consequently, addressing climate change necessitates a multifaceted approach that encompasses policy interventions, technological innovation, and international cooperation. By fostering collaboration among governments, businesses, and civil society, it is possible to mitigate the worst impacts of climate change and build a more resilient and sustainable future for generations to come."
+  },
+  {
+    "id": "ai-03-history-essay",
+    "label": 1,
+    "genre": "AI (history essay)",
+    "text": "The Industrial Revolution marked a transformative period in human history, fundamentally altering the fabric of society through unprecedented technological and economic change. Beginning in Britain during the late eighteenth century, this era witnessed the transition from agrarian economies to industrialized, urban ones. It is essential to recognize that this shift was driven by a confluence of factors, including advancements in manufacturing processes, the harnessing of steam power, and the expansion of transportation networks. Moreover, the rise of factories fundamentally changed labor practices, leading to significant social upheaval as workers migrated from rural areas to burgeoning industrial cities. While the Industrial Revolution undoubtedly generated immense wealth and spurred remarkable innovation, it also gave rise to considerable hardship, including poor working conditions and widespread inequality. Ultimately, this period laid the groundwork for the modern industrialized world, shaping economic and social structures that continue to influence society today."
+  },
+  {
+    "id": "human-01-personal-opinion",
+    "label": 0,
+    "genre": "human (casual opinion)",
+    "text": "I'm not sure I buy most of that, honestly. We tried three of these tools at work last year and two of them were abandoned within about four months. The problem wasn't the models. It was that nobody could agree on who owned the data, and the one person who understood the pipeline left in March. Our CTO still calls it a success in board decks, which tells you something. Maybe bigger companies have an easier time of it. From where I sat it looked like the same reorganisation we'd already done twice, with a new name on it. I don't know, maybe I'm just cynical at this point. My manager keeps asking if we should try again next quarter and I honestly don't have a good answer for her."
+  },
+  {
+    "id": "human-02-wikipedia-style",
+    "label": 0,
+    "genre": "human (encyclopedic, dense)",
+    "text": "Artabasdos was a Byzantine general who served as strategos of the Armeniac Theme before rising to briefly usurp the imperial throne between 741 and 743. He was married to Anna, a daughter of Emperor Leo III, which secured his position within the ruling family. When Leo III died in 741, Artabasdos initially supported the succession of his brother-in-law Constantine V, but the two soon fell into conflict over religious policy, particularly the question of iconoclasm. Artabasdos, who favored the veneration of icons, seized the opportunity presented by a military campaign against the Umayyad Caliphate to march on Constantinople and proclaim himself emperor. His reign was short-lived; Constantine V rallied support among the eastern provinces and eventually retook the capital in November 743, after which Artabasdos was blinded and confined to a monastery, a common fate for deposed Byzantine rulers."
+  },
+  {
+    "id": "human-03-esl-student",
+    "label": 0,
+    "genre": "human (ESL student writing)",
+    "text": "In my country, education system is very different from here. When I was student, we must to memorize many things for exam, not really understand deeply. Teacher give us book and we copy the answer, this is normal way for study. But when I come to this university, I see student here they ask more question and discuss in class, this is new experience for me. At first I was very shy to speak because my English is not so good, but professor encourage me many time. Now I think both way of learning have some good point. Memorize help you remember basic fact fast, but discussion help you think by yourself. I still improving my writing but I try my best every assignment."
+  },
+  {
+    "id": "human-04-technical",
+    "label": 0,
+    "genre": "human (technical/engineering notes)",
+    "text": "Ran into a nasty bug today where the connection pool would silently exhaust under load — turned out three services were sharing the same pool config, but only one of them ever released connections properly. Fixed it by splitting the pools per-service and adding a timeout on checkout, but that just papers over the actual leak. Need to go back and audit the ORM layer, since I suspect the session isn't being closed in the retry path. Also noticed CPU spikes correlate almost exactly with GC pauses on the older nodes, which makes me think we're allocating way more than we need to per request. Profiling is next; I don't want to guess at this one again."
+  },
+  {
+    "id": "human-05-creative-narrative",
+    "label": 0,
+    "genre": "human (creative writing)",
+    "text": "The bus was late again, of course, and Mara stood under the bent-out awning trying to keep the rain off her one good shoe. Somewhere behind her a dog barked twice and gave up. She thought about calling her sister, then didn't. Some things you just carry. A man in a yellow coat sat down on the bench without a word, unfolded a newspaper he clearly wasn't going to read in this light, and that was that — two strangers, one umbrella's worth of dry pavement between them, waiting on the same thing for entirely different reasons."
+  },
+  {
+    "id": "human-06-strong-student-essay",
+    "label": 0,
+    "genre": "human (strong student essay)",
+    "text": "Shakespeare's use of dramatic irony in Othello does more than build suspense; it implicates the audience in Iago's manipulation. We know what Othello does not, and that gap forces us to watch him walk toward his own destruction without being able to warn him. This is uncomfortable in a way that a simple villain-versus-hero plot wouldn't be. Consider the handkerchief scene: we've already seen Iago plant it, so Othello's mounting suspicion reads not as reasonable deduction but as a man being fed exactly the conclusion someone else wants him to reach. That discomfort, I'd argue, is the point — the play isn't really asking whether Othello is jealous, it's asking how easily any of us could be maneuvered the same way given the right liar and the right insecurity to exploit."
+  },
+  {
+    "id": "human-07-weak-student-essay",
+    "label": 0,
+    "genre": "human (weaker student essay)",
+    "text": "The book Of Mice and Men is about two guys named George and Lennie who travel together during the great depression. Lennie is really strong but he doesnt understand his own strength and this causes problems later in the story. They have a dream of owning their own farm someday and this dream is what keeps them going even when things are hard. I think the author wanted to show that dreams are important even if they dont come true. Also the setting during the depression shows how hard life was for workers back then. Overall I think this book teaches a good lesson about friendship and hope even in bad times."
+  },
+  {
+    "id": "ai-04-short-generic",
+    "label": 1,
+    "genre": "AI (short generic paragraph)",
+    "text": "Effective time management is essential for achieving success in both personal and professional endeavors. By prioritizing tasks and setting clear goals, individuals can enhance their productivity and reduce stress. Moreover, it is important to allocate time for rest and self-care, as this fosters long-term well-being. Ultimately, mastering time management empowers individuals to lead more balanced and fulfilling lives."
+  },
+  {
+    "id": "human-08-short-personal",
+    "label": 0,
+    "genre": "human (short, personal)",
+    "text": "Honestly I just wing it most days. I write down like three things I need to do and ignore the rest until they're on fire. Somehow it works out more than it should. My mom thinks I need a planner. I've bought four planners."
+  }
+]

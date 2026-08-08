@@ -1,19 +1,21 @@
 /**
  * Klarity.ai backend proxy — Cloudflare Worker
  *
- * Runs AI generation through Cloudflare Workers AI (the `AI` binding below),
- * so there is NO API key anywhere in this project — not for students, not
- * for the site owner. The binding authenticates automatically through
- * whichever Cloudflare account the Worker is deployed under. Also fetches
- * pasted article URLs server-side (browsers block this via CORS).
+ * Holds the Gemini API key as a Cloudflare secret (set by the site owner via
+ * `wrangler secret put GEMINI_API_KEY` — never hardcoded here) and proxies
+ * AI-generation requests from the frontend so students never see or enter a
+ * key. Also fetches pasted article URLs server-side (browsers block this via
+ * CORS).
  *
  * Deploy: see DEPLOY.md in this folder.
  */
 
-const AI_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const GEMINI_MODEL = 'gemini-3.6-flash';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const TTS_MODEL = 'gemini-3.1-flash-tts-preview';
 
-const MAX_PROMPT_CHARS = 100000;   // ~25k tokens guardrail (Workers AI context is smaller than cloud frontier models)
-const MAX_OUTPUT_TOKENS = 4096;
+const MAX_PROMPT_CHARS = 200000;   // ~50k tokens guardrail
+const MAX_OUTPUT_TOKENS = 8192;
 const RATE_LIMIT_PER_HOUR = 40;    // per-IP, generous for one student, caps abuse
 
 function corsHeaders(origin) {
@@ -61,13 +63,16 @@ export default {
     if (url.pathname === '/api/fetch-url' && request.method === 'POST') {
       return handleFetchUrl(request, headers);
     }
+    if (url.pathname === '/api/tts' && request.method === 'POST') {
+      return handleTts(request, env, headers);
+    }
     return json({ error: 'Not found' }, 404, headers);
   },
 };
 
 async function handleGenerate(request, env, headers) {
-  if (!env.AI) {
-    return json({ error: 'The Workers AI binding is not set up yet. See DEPLOY.md.' }, 500, headers);
+  if (!env.GEMINI_API_KEY) {
+    return json({ error: 'Server is not configured with an API key yet.' }, 500, headers);
   }
 
   let body;
@@ -86,31 +91,130 @@ async function handleGenerate(request, env, headers) {
     return json({ error: 'Input is too large for this endpoint.' }, 400, headers);
   }
 
-  const messages = [];
+  const payload = {
+    model: GEMINI_MODEL,
+    input: prompt,
+    generation_config: {
+      max_output_tokens: Math.min(maxOutputTokens || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS),
+    },
+  };
   var systemText = system || '';
   if (wantsJson) {
     systemText += (systemText ? ' ' : '') + 'Respond with ONLY the raw JSON described above — no markdown code fences, no commentary before or after it.';
   }
-  if (systemText) messages.push({ role: 'system', content: systemText });
-  messages.push({ role: 'user', content: prompt });
-
-  let data;
-  try {
-    data = await env.AI.run(AI_MODEL, {
-      messages,
-      max_tokens: Math.min(maxOutputTokens || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS),
-      temperature: 0.4,
-    });
-  } catch (e) {
-    return json({ error: 'Could not reach the AI model: ' + String(e.message || e) }, 502, headers);
+  if (systemText) {
+    payload.system_instruction = systemText;
   }
 
-  const text = (data && (data.response || data.result?.response)) || '';
+  let resp;
+  try {
+    resp = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.error('generate: network error reaching Gemini', { endpoint: GEMINI_URL, model: GEMINI_MODEL, error: String(e.message || e) });
+    return json({ error: 'Could not reach the AI provider: ' + String(e.message || e) }, 502, headers);
+  }
+
+  const rawText = await resp.text();
+  let data;
+  try { data = JSON.parse(rawText); } catch { data = null; }
+  if (!resp.ok) {
+    const reason = data?.error?.details?.find((d) => d.reason)?.reason || null;
+    console.error('generate: upstream error', {
+      endpoint: GEMINI_URL,
+      model: GEMINI_MODEL,
+      httpStatus: resp.status,
+      googleErrorStatus: data?.error?.status || null,
+      googleErrorReason: reason,
+    });
+    const msg = data?.error?.message || `Upstream error (${resp.status})`;
+    return json({ error: msg }, resp.status >= 400 && resp.status < 600 ? resp.status : 502, headers);
+  }
+
+  // The Interactions API returns a `steps` array mixing "thought" steps and
+  // a "model_output" step; the model_output step's content array carries the
+  // actual text blocks. (Verified against a live response — the docs implied
+  // a flat {output_text} shape that isn't what the API actually returns.)
+  const outputStep = (data.steps || []).find((s) => s.type === 'model_output');
+  const text = (outputStep?.content || [])
+    .filter((c) => c.type === 'text')
+    .map((c) => c.text || '')
+    .join('') || data.output_text || '';
+
   if (!text) {
+    console.error('generate: no text extracted from response', { stepsTypes: (data.steps || []).map((s) => s.type) });
     return json({ error: 'The AI returned an empty response. Try again.' }, 502, headers);
   }
 
   return json({ text }, 200, headers);
+}
+
+/**
+ * generateSpeech(text, voiceId) — abstracted so swapping TTS providers later
+ * only touches this function, not the frontend. Single-speaker per call by
+ * design: the podcast script is generated turn-by-turn so that editing or
+ * regenerating one line only re-synthesizes that one line's audio, not the
+ * whole podcast (see DEPLOY.md / DETECTION.md-style cost notes).
+ */
+async function generateSpeech(env, text, voiceId) {
+  const payload = {
+    model: TTS_MODEL,
+    input: text,
+    response_format: { type: 'audio' },
+    generation_config: { speech_config: [{ voice: voiceId }] },
+  };
+  const resp = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+    body: JSON.stringify(payload),
+  });
+  const rawText = await resp.text();
+  let data;
+  try { data = JSON.parse(rawText); } catch { data = null; }
+  if (!resp.ok) {
+    const msg = data?.error?.message || rawText.slice(0, 400) || `Upstream error (${resp.status})`;
+    throw new Error(msg);
+  }
+  return { data, rawText };
+}
+
+async function handleTts(request, env, headers) {
+  if (!env.GEMINI_API_KEY) {
+    return json({ error: 'Server is not configured with an API key yet.' }, 500, headers);
+  }
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body.' }, 400, headers); }
+  const { text, voice } = body;
+  if (!text || typeof text !== 'string') return json({ error: 'Missing "text" string.' }, 400, headers);
+  if (!voice || typeof voice !== 'string') return json({ error: 'Missing "voice" string.' }, 400, headers);
+  if (text.length > 4000) return json({ error: 'That line is too long for one TTS call.' }, 400, headers);
+
+  let result;
+  try {
+    result = await generateSpeech(env, text, voice);
+  } catch (e) {
+    console.error('tts: upstream error', { error: String(e.message || e) });
+    return json({ error: String(e.message || e) }, 502, headers);
+  }
+
+  const outputStep = (result.data.steps || []).find((s) => s.type === 'model_output');
+  const audioBlock = (outputStep?.content || []).find((c) => c.type === 'audio');
+  if (!audioBlock || !audioBlock.data) {
+    console.error('tts: no audio block in response', { stepTypes: (result.data.steps || []).map((s) => s.type) });
+    return json({ error: 'The TTS provider returned no audio. Try again.' }, 502, headers);
+  }
+  return json({
+    audioBase64: audioBlock.data,
+    sampleRate: audioBlock.sample_rate || 24000,
+    channels: audioBlock.channels || 1,
+    mimeType: audioBlock.mime_type_string || audioBlock.mime_type || 'audio/l16',
+  }, 200, headers);
 }
 
 async function handleFetchUrl(request, headers) {
