@@ -370,21 +370,22 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 .dash-section-hd h2{font-size:20px; letter-spacing:-.01em; line-height:1.3; margin-bottom:6px}
 .dash-section-hd p{font-size:13px; color:var(--tx-2); line-height:1.55}
 
-/* feature overview — a scannable, clickable list: each row jumps straight
-   into that tool, so the dashboard doubles as a launcher. */
-.feature-list{display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line);
-  border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden}
-@media (max-width:760px){ .feature-list{grid-template-columns:1fr} }
-.feature-row{display:flex; gap:14px; align-items:flex-start; padding:20px 22px; background:var(--surface);
-  transition:var(--t-theme), transform .15s ease; text-align:left; width:100%; border:0; appearance:none;
-  cursor:pointer; font:inherit; color:inherit}
-button.feature-row:hover{background:var(--surface-2)}
-button.feature-row:hover .f-icon{background:var(--accent); color:var(--accent-contrast)}
-.f-icon{width:36px; height:36px; border-radius:10px; flex:0 0 auto; display:grid; place-items:center;
+/* tool grid — each tool is its own standalone card, not a shared-border
+   row: click any card to jump straight into that tool. */
+.tool-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+@media (max-width:900px){ .tool-grid{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:560px){ .tool-grid{grid-template-columns:1fr} }
+.tool-card{padding:24px; display:flex; flex-direction:column; align-items:flex-start; gap:12px;
+  text-align:left; width:100%; border:1px solid var(--line); appearance:none; cursor:pointer;
+  font:inherit; color:inherit; transition:transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s ease,
+  border-color .2s ease, var(--t-theme)}
+.tool-card:hover{transform:translateY(-3px); box-shadow:var(--sh-lg); border-color:var(--accent-shadow-1)}
+.tool-card:hover .f-icon{background:var(--accent); color:var(--accent-contrast)}
+.tool-card h3{font-size:15px; margin-bottom:4px; letter-spacing:-.005em}
+.tool-card p{font-size:12.75px; color:var(--tx-2); line-height:1.55}
+.f-icon{width:44px; height:44px; border-radius:12px; flex:0 0 auto; display:grid; place-items:center;
   background:var(--accent-soft); color:var(--accent); transition:var(--t-theme)}
-.f-icon svg{width:18px; height:18px}
-.feature-row h3{font-size:14.5px; margin-bottom:3px; letter-spacing:-.005em}
-.feature-row p{font-size:12.75px; color:var(--tx-2); line-height:1.55}
+.f-icon svg{width:21px; height:21px}
 
 /* by the numbers — the app's own measured facts, visualized. No outside
    claims, nothing invented: every figure here traces back to a number
@@ -761,77 +762,9 @@ button.feature-row:hover .f-icon{background:var(--accent); color:var(--accent-co
     </div>
   </section>
 
-</div>
+  <div class="wrap">
 
-<div class="wrap" id="mainWrap">
-
-<div id="engineBar" class="enginebar hide">
-  <span id="engineDot" class="dot warn"></span>
-  <span id="engineTxt">Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.</span>
-</div>
-
-<!-- ============ DASHBOARD ============ -->
-<div id="paneDashboard" class="hide">
-<div class="wrap dash-wrap">
-
-  <div class="dash-header">
-    <div>
-      <h1>Dashboard</h1>
-      <p>Everything in the Klarity suite, in one place.</p>
-    </div>
-    <button class="btn primary" data-goto="detect" type="button">
-      Analyze text
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </button>
-  </div>
-
-  <section class="dash-section">
-    <div class="dash-section-hd">
-      <p class="section-lab">Your tools</p>
-      <h2>One suite, eight tools</h2>
-      <p>Click any tool to jump straight in. The same list is always one tap away in the menu, top left.</p>
-    </div>
-    <div class="feature-list">
-      <button class="feature-row" data-goto="detect" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg></div>
-        <div><h3>AI Detector</h3><p>Scan any text with two on-device models and see exactly which sentences read as machine-written.</p></div>
-      </button>
-      <button class="feature-row" data-goto="human" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
-        <div><h3>AI Humanizer</h3><p>Rewrite the sentences a detector flags so your text keeps your voice while reading naturally.</p></div>
-      </button>
-      <button class="feature-row" data-goto="writing" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></div>
-        <div><h3>Writing Analytics</h3><p>A full readability and style breakdown &mdash; tone, structure, vocabulary and more.</p></div>
-      </button>
-      <button class="feature-row" data-goto="rubric" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <div><h3>Rubric Analyzer</h3><p>Grade your essay against your teacher's actual rubric &mdash; see what's missing before you submit.</p></div>
-      </button>
-      <button class="feature-row" data-goto="coach" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-        <div><h3>Essay Coach</h3><p>Highlights specific sentences worth revising and explains why &mdash; you stay in control of every change.</p></div>
-      </button>
-      <button class="feature-row" data-goto="research" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-        <div><h3>Research Assistant</h3><p>Summarize sources, pull key quotes, and generate MLA/APA/Chicago citations automatically.</p></div>
-      </button>
-      <button class="feature-row" data-goto="study" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
-        <div><h3>Study Generator</h3><p>Turn notes or slides into flashcards, quizzes, study guides and chapter summaries.</p></div>
-      </button>
-      <button class="feature-row" data-goto="podcast" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg></div>
-        <div><h3>Podcast Generator</h3><p>Turn your notes into a two-speaker study podcast you can listen to.</p></div>
-      </button>
-      <button class="feature-row" data-goto="settings" type="button">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
-        <div><h3>Your account</h3><p>Coming soon: sign in to save analyses and pick up where you left off. Not required to use any tool today.</p></div>
-      </button>
-    </div>
-  </section>
-
-  <section class="dash-section">
+  <section class="dash-section" style="border-top:none">
     <div class="dash-section-hd">
       <p class="section-lab">By the numbers</p>
       <h2>What this suite's own testing shows</h2>
@@ -919,6 +852,78 @@ button.feature-row:hover .f-icon{background:var(--accent); color:var(--accent-co
           <span class="badge-soon">Coming Soon</span>
         </div>
       </div>
+    </div>
+  </section>
+
+  </div>
+
+</div>
+
+<div class="wrap" id="mainWrap">
+
+<div id="engineBar" class="enginebar hide">
+  <span id="engineDot" class="dot warn"></span>
+  <span id="engineTxt">Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.</span>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="paneDashboard" class="hide">
+<div class="wrap dash-wrap">
+
+  <div class="dash-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Everything in the Klarity suite, in one place.</p>
+    </div>
+    <button class="btn primary" data-goto="detect" type="button">
+      Analyze text
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+
+  <section class="dash-section">
+    <div class="dash-section-hd">
+      <p class="section-lab">Your tools</p>
+      <h2>One suite, eight tools</h2>
+      <p>Click any tool to jump straight in. The same list is always one tap away in the menu, top left.</p>
+    </div>
+    <div class="tool-grid">
+      <button class="card tool-card" data-goto="detect" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg></div>
+        <h3>AI Detector</h3><p>Scan any text with two on-device models and see exactly which sentences read as machine-written.</p>
+      </button>
+      <button class="card tool-card" data-goto="human" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+        <h3>AI Humanizer</h3><p>Rewrite the sentences a detector flags so your text keeps your voice while reading naturally.</p>
+      </button>
+      <button class="card tool-card" data-goto="writing" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></div>
+        <h3>Writing Analytics</h3><p>A full readability and style breakdown &mdash; tone, structure, vocabulary and more.</p>
+      </button>
+      <button class="card tool-card" data-goto="rubric" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Rubric Analyzer</h3><p>Grade your essay against your teacher's actual rubric &mdash; see what's missing before you submit.</p>
+      </button>
+      <button class="card tool-card" data-goto="coach" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+        <h3>Essay Coach</h3><p>Highlights specific sentences worth revising and explains why &mdash; you stay in control of every change.</p>
+      </button>
+      <button class="card tool-card" data-goto="research" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <h3>Research Assistant</h3><p>Summarize sources, pull key quotes, and generate MLA/APA/Chicago citations automatically.</p>
+      </button>
+      <button class="card tool-card" data-goto="study" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
+        <h3>Study Generator</h3><p>Turn notes or slides into flashcards, quizzes, study guides and chapter summaries.</p>
+      </button>
+      <button class="card tool-card" data-goto="podcast" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg></div>
+        <h3>Podcast Generator</h3><p>Turn your notes into a two-speaker study podcast you can listen to.</p>
+      </button>
+      <button class="card tool-card" data-goto="settings" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+        <h3>Your account</h3><p>Coming soon: sign in to save analyses and pick up where you left off. Not required to use any tool today.</p>
+      </button>
     </div>
   </section>
 
