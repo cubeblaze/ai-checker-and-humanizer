@@ -1,0 +1,24 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/.git/**",
+      "**/.wrangler/**",
+      "**/node_modules/**",
+      "**/tests/**",
+      "worker.js",
+      "wrangler.toml",
+      "DEPLOY.md",
+      "DETECTION.md",
+      "README.md"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
