@@ -1441,14 +1441,12 @@ window.dispatchEvent(new Event('kauth-ready'));
         <div class="pc-voice-grid">
           <div class="pc-voice-card">
             <div class="fld-lab">Speaker 1</div>
-            <input type="text" id="pcName1" value="Alex" maxlength="20" style="width:100%; margin-bottom:8px; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:var(--tx); font-weight:650">
             <select id="pcVoice1" class="pc-voice-select"></select>
             <div class="mini" id="pcVoiceDesc1" style="margin:6px 0"></div>
             <button class="btn sm" id="btnPcPreview1" type="button">&#9654; Preview</button>
           </div>
           <div class="pc-voice-card">
             <div class="fld-lab">Speaker 2</div>
-            <input type="text" id="pcName2" value="Jordan" maxlength="20" style="width:100%; margin-bottom:8px; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:var(--tx); font-weight:650">
             <select id="pcVoice2" class="pc-voice-select"></select>
             <div class="mini" id="pcVoiceDesc2" style="margin:6px 0"></div>
             <button class="btn sm" id="btnPcPreview2" type="button">&#9654; Preview</button>
@@ -4535,17 +4533,30 @@ studyRenderSavedList();
    ============================================================ */
 
 /* ---- voice catalog: swappable config, not hardcoded into the logic ---- */
-var PODCAST_VOICES = [
-  {id:'Zephyr', style:'Bright'}, {id:'Puck', style:'Upbeat'}, {id:'Charon', style:'Informative'},
-  {id:'Kore', style:'Firm'}, {id:'Fenrir', style:'Excitable'}, {id:'Leda', style:'Youthful'},
-  {id:'Orus', style:'Firm'}, {id:'Aoede', style:'Breezy'}, {id:'Callirrhoe', style:'Easy-going'},
-  {id:'Autonoe', style:'Bright'}, {id:'Enceladus', style:'Breathy'}, {id:'Iapetus', style:'Clear'},
-  {id:'Umbriel', style:'Easy-going'}, {id:'Algieba', style:'Smooth'}, {id:'Despina', style:'Smooth'},
-  {id:'Erinome', style:'Clear'}, {id:'Algenib', style:'Gravelly'}, {id:'Rasalgethi', style:'Informative'},
-  {id:'Laomedeia', style:'Upbeat'}, {id:'Achernar', style:'Soft'}, {id:'Alnilam', style:'Firm'},
-  {id:'Schedar', style:'Even'}, {id:'Gacrux', style:'Mature'}, {id:'Pulcherrima', style:'Forward'},
-  {id:'Achird', style:'Friendly'}, {id:'Zubenelgenubi', style:'Casual'}, {id:'Vindemiatrix', style:'Gentle'},
-  {id:'Sadachbia', style:'Lively'}, {id:'Sadaltager', style:'Knowledgeable'}, {id:'Sulafat', style:'Warm'}
+// Voice IDs come from Gemini's prebuilt TTS voice set, which shares its
+// names with Google Cloud's Chirp3-HD family — genders below are taken from
+// Chirp3-HD's documented SSML gender for each name (Gemini's own docs don't
+// label gender). Each persona pairs a human first name with one voice, so
+// the picker below is name-only and each name reliably sounds like that
+// gender, with a deliberately varied style per person (deep, upbeat, calm,
+// warm, etc.) rather than every voice in a gender sounding the same.
+var PODCAST_PERSONAS = [
+  {name:'Emma',   gender:'female', voice:'Kore',        style:'Firm, confident'},
+  {name:'Sophie', gender:'female', voice:'Leda',         style:'Youthful, energetic'},
+  {name:'Zoe',    gender:'female', voice:'Laomedeia',    style:'Upbeat, cheerful'},
+  {name:'Maya',   gender:'female', voice:'Aoede',        style:'Relaxed, breezy'},
+  {name:'Grace',  gender:'female', voice:'Sulafat',      style:'Warm, approachable'},
+  {name:'Olivia', gender:'female', voice:'Gacrux',       style:'Deep, mature'},
+  {name:'Chloe',  gender:'female', voice:'Autonoe',      style:'Bright, cheerful'},
+  {name:'Ava',    gender:'female', voice:'Vindemiatrix', style:'Gentle, soft-spoken'},
+  {name:'Jake',   gender:'male',   voice:'Puck',         style:'Upbeat, happy'},
+  {name:'Noah',   gender:'male',   voice:'Charon',       style:'Calm, informative'},
+  {name:'Ethan',  gender:'male',   voice:'Fenrir',       style:'Excitable, passionate'},
+  {name:'Marcus', gender:'male',   voice:'Algenib',      style:'Deep, gravelly'},
+  {name:'Leo',    gender:'male',   voice:'Orus',         style:'Calm, firm'},
+  {name:'Dylan',  gender:'male',   voice:'Zubenelgenubi',style:'Casual, relaxed'},
+  {name:'Aiden',  gender:'male',   voice:'Schedar',      style:'Even, steady'},
+  {name:'Ryan',   gender:'male',   voice:'Umbriel',      style:'Easy-going, relaxed'}
 ];
 
 /* ---- PCM / WAV helpers (no server-side audio processing available, so
@@ -4680,7 +4691,7 @@ var pcState = null;
 function pcNewState(){
   return {
     id: null, notes:'', settings:{length:'standard', customMinutes:10, difficulty:'standard', style:'friendly', fillGaps:false},
-    speaker1:{name:'Alex', voice:'Kore'}, speaker2:{name:'Jordan', voice:'Puck'},
+    speaker1:{name:'Maya', voice:'Aoede'}, speaker2:{name:'Jake', voice:'Puck'},
     title:'', subject:'', turns:[], keyTakeaways:[],
     audioBlob:null, audioUrl:null, createdAt:null
   };
@@ -4693,21 +4704,37 @@ function pcShowView(name){
   window.scrollTo(0,0);
 }
 
-/* ---- voice select population ---- */
-function pcPopulateVoiceSelect(sel, chosen){
-  sel.innerHTML = PODCAST_VOICES.map(function(v){
-    return '<option value="'+v.id+'"'+(v.id===chosen?' selected':'')+'>'+v.id+' — '+v.style+'</option>';
-  }).join('');
+/* ---- persona (name+voice, picked together) select population ---- */
+function pcPopulatePersonaSelect(sel, chosenName){
+  var girls = PODCAST_PERSONAS.filter(function(p){ return p.gender==='female'; });
+  var boys = PODCAST_PERSONAS.filter(function(p){ return p.gender==='male'; });
+  function opts(list){
+    return list.map(function(p){
+      return '<option value="'+p.name+'"'+(p.name===chosenName?' selected':'')+'>'+p.name+' — '+p.style+'</option>';
+    }).join('');
+  }
+  sel.innerHTML = '<optgroup label="Girls">'+opts(girls)+'</optgroup>'+'<optgroup label="Boys">'+opts(boys)+'</optgroup>';
+}
+function pcPersonaFor(n){
+  var speaker = n===1 ? pcState.speaker1 : pcState.speaker2;
+  return PODCAST_PERSONAS.find(function(p){ return p.name===speaker.name; }) || PODCAST_PERSONAS[0];
 }
 function pcInitVoiceUI(){
-  pcPopulateVoiceSelect($('pcVoice1'), pcState.speaker1.voice);
-  pcPopulateVoiceSelect($('pcVoice2'), pcState.speaker2.voice);
+  pcPopulatePersonaSelect($('pcVoice1'), pcState.speaker1.name);
+  pcPopulatePersonaSelect($('pcVoice2'), pcState.speaker2.name);
   pcUpdateVoiceDesc(1); pcUpdateVoiceDesc(2);
 }
+function pcApplyPersonaChoice(n){
+  var chosenName = $('pcVoice'+n).value;
+  var p = PODCAST_PERSONAS.find(function(x){ return x.name===chosenName; });
+  if(!p) return;
+  var speaker = n===1 ? pcState.speaker1 : pcState.speaker2;
+  speaker.name = p.name; speaker.voice = p.voice;
+  pcUpdateVoiceDesc(n);
+}
 function pcUpdateVoiceDesc(n){
-  var sel = $('pcVoice'+n).value;
-  var v = PODCAST_VOICES.find(function(x){ return x.id===sel; });
-  $('pcVoiceDesc'+n).textContent = v ? ('Style: '+v.style) : '';
+  var p = pcPersonaFor(n);
+  $('pcVoiceDesc'+n).textContent = p ? ('Style: '+p.style) : '';
 }
 
 var pcPreviewAudio = null;
@@ -4716,8 +4743,8 @@ async function pcPreviewVoice(n){
   var was = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
   try{
-    var voice = $('pcVoice'+n).value;
-    var name = $('pcName'+n).value.trim() || ('Speaker '+n);
+    var p = pcPersonaFor(n);
+    var voice = p.voice, name = p.name;
     var sample = 'Hi, I\'m '+name+'. This is what I sound like in your podcast.';
     var r = await callBackendTts(sample, voice);
     var bytes = pcBase64ToBytes(r.audioBase64);
@@ -4773,6 +4800,7 @@ function buildPodcastScriptPrompt(){
   var s = pcState.settings;
   var minutes = pcTargetMinutes();
   var targetWords = Math.round(minutes*150); // ~150 spoken words/minute
+  var maxTurns = Math.max(10, Math.round(targetWords/22)); // ~22 words/turn average
   var s1 = pcState.speaker1.name, s2 = pcState.speaker2.name;
   return 'You are writing a script for '+PC_STYLE_LABEL[s.style]+', for '+PC_DIFFICULTY_LABEL[s.difficulty]+'. '+
     'The two speakers are named "'+s1+'" and "'+s2+'". They are studying the material in the notes below together.\n\n'+
@@ -4793,7 +4821,8 @@ function buildPodcastScriptPrompt(){
       ? '- You may add general background knowledge beyond the notes where it helps understanding, but stay consistent with everything the notes actually say.\n'
       : '- Use ONLY information from the notes below. Do NOT invent facts, statistics, dates, or claims not supported by the notes.\n'+
         '- If a natural follow-up question would require information the notes don\'t cover, have a speaker say something like "Your notes don\'t give us enough to answer that, so let\'s stick with what we know" rather than inventing an answer.\n')+
-    '\nTarget length: approximately '+targetWords+' spoken words total (about '+minutes+' minutes at a natural pace).\n\n'+
+    '\nTarget length: approximately '+targetWords+' spoken words total (about '+minutes+' minutes at a natural pace). '+
+    'Use AT MOST '+maxTurns+' turns total — if the notes cover more than fits in that, prioritize the most important concepts rather than cramming everything in.\n\n'+
     'Respond with ONLY valid JSON (no markdown fences, no commentary) matching exactly this shape:\n'+
     '{\n'+
     '  "title": "a short, specific podcast title based on the notes",\n'+
@@ -4827,12 +4856,34 @@ function pcSetStatus(msg, isError){
   el.innerHTML = isError ? ('<span class="bad-txt">'+esc(msg)+'</span>') : ('<span class="spin"></span>'+esc(msg));
 }
 
+// Even with a generous token budget and an explicit turn cap, a model can
+// still get cut off mid-JSON on rich source notes. Rather than hard-failing
+// the whole script, salvage every complete {"speaker":..,"text":".."} turn
+// object found in the raw text so the user still gets a usable (if shorter)
+// script instead of an error.
+function pcParseScriptJSON(raw){
+  try{ return { data: JSON.parse(raw), salvaged: false }; }catch(e){}
+  var m = raw.match(/\{[\s\S]*\}/);
+  if(m){ try{ return { data: JSON.parse(m[0]), salvaged: false }; }catch(e2){} }
+
+  var title = (raw.match(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/)||[])[1];
+  var subject = (raw.match(/"subject"\s*:\s*"((?:[^"\\]|\\.)*)"/)||[])[1];
+  var turns = [];
+  var re = /\{\s*"speaker"\s*:\s*(1|2)\s*,\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+  var mm;
+  while((mm = re.exec(raw))){
+    turns.push({ speaker: parseInt(mm[1],10), text: mm[2].replace(/\\"/g,'"').replace(/\\n/g,' ') });
+  }
+  if(turns.length >= 2){
+    return { data: { title: title||'Untitled podcast', subject: subject||'General', turns: turns, keyTakeaways: [] }, salvaged: true };
+  }
+  throw new Error('The AI response wasn’t valid JSON. Try again.');
+}
+
 async function runPodcastScriptGen(){
   if(!pcState.notes.trim()){ showToast('Paste or upload your notes first.'); return; }
-  pcState.speaker1.name = $('pcName1').value.trim() || 'Alex';
-  pcState.speaker2.name = $('pcName2').value.trim() || 'Jordan';
-  pcState.speaker1.voice = $('pcVoice1').value;
-  pcState.speaker2.voice = $('pcVoice2').value;
+  pcApplyPersonaChoice(1);
+  pcApplyPersonaChoice(2);
   pcState.settings.fillGaps = $('pcFillGaps').checked;
 
   pcShowView('pcScriptView');
@@ -4841,11 +4892,16 @@ async function runPodcastScriptGen(){
   $('btnPcGenerateScript').disabled = true;
   try{
     pcSetStatus('Analyzing notes and organizing concepts…');
-    var result = await callBackendJSON(buildPodcastScriptPrompt(), { maxOutputTokens: pcScriptTokenBudget() });
+    var raw = await callBackend(buildPodcastScriptPrompt(), { json:true, maxOutputTokens: pcScriptTokenBudget() });
+    var parsed = pcParseScriptJSON(raw);
+    var result = parsed.data;
     pcState.title = result.title || 'Untitled podcast';
     pcState.subject = result.subject || 'General';
     pcState.turns = (result.turns||[]).map(function(t){ return {speaker: t.speaker===2?2:1, text:t.text||''}; });
     pcState.keyTakeaways = result.keyTakeaways || [];
+    if(parsed.salvaged){
+      showToast('The script ran long and got cut short — recovered '+pcState.turns.length+' lines. You can regenerate for a cleaner full script.');
+    }
 
     pcSetStatus('Checking accuracy against your notes…');
     try{
@@ -5148,7 +5204,6 @@ async function pcLoadFromLibrary(id){
 function pcResetSetupForm(){
   pcState = pcNewState();
   $('pcNotes').value = ''; pcUpdWordCount();
-  $('pcName1').value = pcState.speaker1.name; $('pcName2').value = pcState.speaker2.name;
   $('pcFillGaps').checked = false;
   pcInitVoiceUI();
   pcWireSegCtl('pcLength','length', function(b){ pcState.settings.length = b.getAttribute('data-len'); $('pcCustomLenRow').classList.toggle('hide', pcState.settings.length!=='custom'); });
@@ -5165,8 +5220,8 @@ $('btnPcGenerateScript').onclick = function(){ pcState.notes = $('pcNotes').valu
 $('btnPcRegenAll').onclick = function(){ runPodcastScriptGen(); };
 $('btnPcGenerateAudio').onclick = runGenerateAudio;
 $('pcNotes').addEventListener('input', pcUpdWordCount);
-$('pcVoice1').addEventListener('change', function(){ pcUpdateVoiceDesc(1); });
-$('pcVoice2').addEventListener('change', function(){ pcUpdateVoiceDesc(2); });
+$('pcVoice1').addEventListener('change', function(){ pcApplyPersonaChoice(1); });
+$('pcVoice2').addEventListener('change', function(){ pcApplyPersonaChoice(2); });
 $('btnPcPreview1').onclick = function(){ pcPreviewVoice(1); };
 $('btnPcPreview2').onclick = function(){ pcPreviewVoice(2); };
 Array.prototype.forEach.call(document.querySelectorAll('[data-pcstudy]'), function(btn){
