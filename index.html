@@ -381,11 +381,32 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 .dash-header p{font-size:13.75px; color:var(--tx-2)}
 .section-lab{font-size:12px; text-transform:uppercase; letter-spacing:.075em; color:var(--tx-3);
   font-weight:700; margin:0 0 13px}
-.dash-section{padding:60px 0; border-top:1px solid var(--line)}
+.dash-section{padding:88px 0; border-top:1px solid var(--line)}
 .dash-section:first-of-type{padding-top:0; border-top:0}
 .dash-section-hd{max-width:560px; margin:0 0 20px}
 .dash-section-hd h2{font-size:20px; letter-spacing:-.01em; line-height:1.3; margin-bottom:6px}
 .dash-section-hd p{font-size:13px; color:var(--tx-2); line-height:1.55}
+.dash-section-hd-row{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  flex-wrap:wrap; margin-bottom:20px}
+.dash-section-hd-row .dash-section-hd{margin-bottom:0}
+
+/* project slots — illustrative, not real yet: dashed like the "coming
+   soon" cards, using the same tool-grid layout so the teaser and the
+   full Your Projects page line up visually with everything else. */
+.project-slot{border-style:dashed; cursor:default}
+.project-slot h3{font-size:14px; color:var(--tx-2); margin-bottom:2px}
+.project-slot p{font-size:12.25px; color:var(--tx-3); line-height:1.55; flex:1}
+.project-slot .f-icon{background:var(--surface-2); color:var(--tx-3)}
+.project-slot .badge-soon{align-self:flex-start}
+
+/* scroll reveal — Home's sections fade/slide in as they cross into view.
+   Each .reveal element starts hidden; JS adds .in via IntersectionObserver
+   the first time it's on screen. Respects reduced-motion by just being
+   visible from the start, no observer needed for that case. */
+.reveal{opacity:0; transform:translateY(26px);
+  transition:opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1; transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){ .reveal{opacity:1; transform:none; transition:none} }
 
 /* tool grid — each tool is its own standalone card, not a shared-border
    row: click any card to jump straight into that tool. */
@@ -723,6 +744,10 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
       Dashboard
     </button>
+    <button class="side-link" data-goto="projects" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+      Your Projects
+    </button>
 
     <p class="side-lab">Tools</p>
     <button class="side-link" data-goto="detect" type="button">
@@ -792,13 +817,13 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
   <div class="wrap">
 
   <section class="dash-section" style="border-top:none">
-    <div class="dash-section-hd">
+    <div class="dash-section-hd reveal">
       <p class="section-lab">By the numbers</p>
       <h2>What this suite's own testing shows</h2>
       <p>No outside claims here &mdash; every figure below is measured from this app's own detector and documented in its own accuracy notes.</p>
     </div>
     <div class="stat-grid">
-      <div class="card stat-card hero-stat">
+      <div class="card stat-card hero-stat reveal" style="transition-delay:0ms">
         <h4>Detector accuracy</h4>
         <div class="stat-ring-row">
           <div class="stat-ring">
@@ -813,7 +838,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
         </div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card reveal" style="transition-delay:80ms">
         <h4>Why length matters</h4>
         <div class="stat-bars">
           <div class="stat-bar-row">
@@ -828,12 +853,12 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
         <div class="stat-foot">One identical human passage, scored twice. Short text collapses toward "AI" &mdash; which is why the Detector won't score anything under 200 words.</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card reveal" style="transition-delay:160ms">
         <div class="stat-bignum">11</div>
         <div class="stat-sub">LLM architectures the primary detector trained across &mdash; GPT&#8209;2/3/4, Mistral, MPT, LLaMA&#8209;2, Cohere and more &mdash; so it generalizes past just ChatGPT's style.</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card reveal" style="transition-delay:240ms">
         <div class="stat-bignum">3<span>/ 8</span></div>
         <div class="stat-sub">Tools that run entirely on-device. Nothing you paste into the Detector, Humanizer or Writing Analytics ever leaves your browser.</div>
       </div>
@@ -841,13 +866,13 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
   </section>
 
   <section class="dash-section">
-    <div class="dash-section-hd">
+    <div class="dash-section-hd reveal">
       <p class="section-lab">What's next</p>
       <h2>Coming soon</h2>
       <p>Not built yet &mdash; listed here so it's clear what's planned versus what's already real.</p>
     </div>
     <div class="soon-grid">
-      <div class="card soon-card">
+      <div class="card soon-card reveal" style="transition-delay:0ms">
         <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
         <div>
           <h3>Analysis History</h3>
@@ -855,7 +880,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
           <span class="badge-soon">Coming Soon</span>
         </div>
       </div>
-      <div class="card soon-card">
+      <div class="card soon-card reveal" style="transition-delay:80ms">
         <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a1 1 0 0 1 1 1v16l-6-3.5L6 20V4a1 1 0 0 1 1-1z"/></svg></div>
         <div>
           <h3>Saved Reports</h3>
@@ -863,7 +888,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
           <span class="badge-soon">Coming Soon</span>
         </div>
       </div>
-      <div class="card soon-card">
+      <div class="card soon-card reveal" style="transition-delay:160ms">
         <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
         <div>
           <h3>Personal Writing Profile</h3>
@@ -871,7 +896,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
           <span class="badge-soon">Coming Soon</span>
         </div>
       </div>
-      <div class="card soon-card">
+      <div class="card soon-card reveal" style="transition-delay:240ms">
         <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg></div>
         <div>
           <h3>Advanced Insights</h3>
@@ -903,6 +928,36 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
       <p>Everything in the Klarity suite, in one place.</p>
     </div>
   </div>
+
+  <section class="dash-section" style="padding-top:0; border-top:0">
+    <div class="dash-section-hd-row">
+      <div class="dash-section-hd">
+        <p class="section-lab">Your projects</p>
+        <h2>Pick up where you left off</h2>
+      </div>
+      <button class="btn" data-goto="projects" type="button">View all</button>
+    </div>
+    <div class="tool-grid">
+      <div class="card project-slot">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+        <h3>Detector reports</h3>
+        <p>Documents you scan will be saved here.</p>
+        <span class="badge-soon">Coming Soon</span>
+      </div>
+      <div class="card project-slot">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+        <h3>Humanized drafts</h3>
+        <p>Rewrites you run will be kept here.</p>
+        <span class="badge-soon">Coming Soon</span>
+      </div>
+      <div class="card project-slot">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
+        <h3>Study sets</h3>
+        <p>Flashcards and quizzes you generate will be collected here.</p>
+        <span class="badge-soon">Coming Soon</span>
+      </div>
+    </div>
+  </section>
 
   <section class="dash-section">
     <div class="dash-section-hd">
@@ -1621,6 +1676,45 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 </div>
 </div>
 
+</div>
+
+<!-- ============ YOUR PROJECTS (placeholder) ============ -->
+<div id="paneProjects" class="hide">
+<div class="wrap dash-wrap">
+  <div class="dash-header">
+    <div>
+      <h1>Your Projects</h1>
+      <p>Every scan, rewrite and study set you save will live here.</p>
+    </div>
+  </div>
+  <div class="tool-grid">
+    <div class="card project-slot">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <h3>Detector reports</h3>
+      <p>Documents you scan will be saved here so you can revisit the breakdown later.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+    <div class="card project-slot">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+      <h3>Humanized drafts</h3>
+      <p>Rewrites you run will be kept here, before and after, for easy comparison.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+    <div class="card project-slot">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
+      <h3>Study sets</h3>
+      <p>Flashcards, quizzes and guides you generate will be collected here.</p>
+      <span class="badge-soon">Coming Soon</span>
+    </div>
+  </div>
+  <div class="note" style="margin-top:24px">
+    <div class="note-hd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      Not built yet
+    </div>
+    Saving projects needs an account system, which doesn't exist yet either. Once it does, anything you analyze, humanize or generate will be saved here automatically &mdash; nothing extra to click.
+  </div>
+</div>
 </div>
 
 <!-- ============ SETTINGS (placeholder) ============ -->
@@ -4963,6 +5057,7 @@ pcRenderLibrary();
 var PANES = {
   home:      {pane:'paneHome'},
   dashboard: {pane:'paneDashboard'},
+  projects:  {pane:'paneProjects'},
   detect:    {pane:'paneDetect'},
   human:     {pane:'paneHuman'},
   writing:   {pane:'paneWriting'},
@@ -4973,7 +5068,7 @@ var PANES = {
   podcast:   {pane:'panePodcast'},
   settings:  {pane:'paneSettings'}
 };
-var NO_ENGINEBAR_PANES = {home:1, dashboard:1, writing:1, rubric:1, coach:1, research:1, study:1, podcast:1, settings:1};
+var NO_ENGINEBAR_PANES = {home:1, dashboard:1, projects:1, writing:1, rubric:1, coach:1, research:1, study:1, podcast:1, settings:1};
 /* Routing lives in the URL hash (#home / #detect / #human / ...) rather than
    only in JS state, for two reasons a plain classList toggle can't give:
    reloading the page must land back on the same pane instead of resetting to
@@ -5021,6 +5116,28 @@ renderPane(location.hash.slice(1) || 'home');   // land on a reload exactly wher
 Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function(btn){
   btn.onclick = function(){ showTab(btn.getAttribute('data-goto')); };
 });
+
+/* ---------- scroll reveal ----------
+   .reveal elements (Home's stat cards, "coming soon" cards, section
+   headings) fade/slide in the first time they cross into view. One
+   shared observer, unobserve-on-reveal since this only ever needs to
+   happen once per element. */
+(function(){
+  if(!('IntersectionObserver' in window)){
+    // no IO support — just show everything, don't block content on a feature detect
+    Array.prototype.forEach.call(document.querySelectorAll('.reveal'), function(el){ el.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  Array.prototype.forEach.call(document.querySelectorAll('.reveal'), function(el){ io.observe(el); });
+})();
 
 /* ---------- hamburger + sidebar drawer ---------- */
 (function(){
