@@ -4601,8 +4601,48 @@ async function callBackendTts(text, voice){
     });
   }catch(e){ throw new Error('Could not reach the AI backend. Check your internet connection and try again.'); }
   var data; try{ data = await resp.json(); }catch(e){ throw new Error('The backend returned an unexpected response.'); }
-  if(!resp.ok || data.error) throw new Error(data.error || ('Backend error (status '+resp.status+').'));
+  if(!resp.ok || data.error){
+    var err = new Error(data.error || ('Backend error (status '+resp.status+').'));
+    err.status = resp.status;
+    throw err;
+  }
   return data; // {audioBase64, sampleRate, channels, mimeType}
+}
+
+// The TTS model's free tier is capped at 10 requests/minute — a normal
+// multi-minute podcast has far more turns than that, so hitting the limit
+// mid-generation is the expected case, not an edge case. Two defenses:
+// pace calls to stay under the limit in the first place, and if a 429
+// slips through anyway, parse Google's own "retry in Xs" hint and wait
+// that long instead of aborting the whole podcast.
+var PC_TTS_MIN_GAP_MS = 6500; // ~9/min, just under the 10/min free-tier cap
+var pcLastTtsAt = 0;
+async function pcThrottleTts(){
+  var wait = pcLastTtsAt + PC_TTS_MIN_GAP_MS - Date.now();
+  if(wait > 0) await new Promise(function(res){ setTimeout(res, wait); });
+  pcLastTtsAt = Date.now();
+}
+function pcIsRateLimit(e){
+  return e.status===429 || /quota|rate limit/i.test(e.message||'');
+}
+async function pcTtsWithRetry(text, voice, onWait){
+  var maxRetries = 6;
+  for(var attempt=0; attempt<=maxRetries; attempt++){
+    await pcThrottleTts();
+    try{
+      return await callBackendTts(text, voice);
+    }catch(e){
+      if(pcIsRateLimit(e) && attempt<maxRetries){
+        var m = /retry in ([\d.]+)\s*s/i.exec(e.message||'');
+        var waitSec = m ? Math.ceil(parseFloat(m[1])) + 2 : 20;
+        if(onWait) onWait(waitSec, attempt+1);
+        await new Promise(function(res){ setTimeout(res, waitSec*1000); });
+        pcLastTtsAt = Date.now();
+        continue;
+      }
+      throw e;
+    }
+  }
 }
 
 /* ---- IndexedDB library ---- */
@@ -4991,7 +5031,9 @@ async function runGenerateAudio(){
       btn.innerHTML = '<span class="spin"></span>Preparing voices &amp; generating audio ('+(i+1)+'/'+pcState.turns.length+')…';
       var t = pcState.turns[i];
       var voice = t.speaker===1 ? pcState.speaker1.voice : pcState.speaker2.voice;
-      var r = await callBackendTts(t.text, voice);
+      var r = await pcTtsWithRetry(t.text, voice, function(waitSec, attempt){
+        btn.innerHTML = '<span class="spin"></span>The AI voice provider is rate-limiting us (free tier) — waiting '+waitSec+'s before continuing ('+(i+1)+'/'+pcState.turns.length+')…';
+      });
       sampleRate = r.sampleRate||24000; channels = r.channels||1;
       var bytes = pcBase64ToBytes(r.audioBase64);
       t.pcm = bytes;

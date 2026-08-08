@@ -184,7 +184,9 @@ async function generateSpeech(env, text, voiceId) {
   if (!resp.ok) {
     const errBody = Array.isArray(data) ? data[0] : data;
     const msg = errBody?.error?.message || rawText.slice(0, 400) || `Upstream error (${resp.status})`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = resp.status; // preserved so callers can tell a 429 (retryable) from a hard failure
+    throw err;
   }
   return { data, rawText };
 }
@@ -204,8 +206,9 @@ async function handleTts(request, env, headers) {
   try {
     result = await generateSpeech(env, text, voice);
   } catch (e) {
-    console.error('tts: upstream error', { error: String(e.message || e) });
-    return json({ error: String(e.message || e) }, 502, headers);
+    console.error('tts: upstream error', { error: String(e.message || e), status: e.status });
+    const status = e.status >= 400 && e.status < 600 ? e.status : 502;
+    return json({ error: String(e.message || e) }, status, headers);
   }
 
   const outputStep = (result.data.steps || []).find((s) => s.type === 'model_output');
