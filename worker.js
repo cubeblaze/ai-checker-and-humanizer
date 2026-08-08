@@ -12,6 +12,7 @@
 
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const TTS_MODEL = 'gemini-3.1-flash-tts-preview';
 
 const MAX_PROMPT_CHARS = 200000;   // ~50k tokens guardrail
 const MAX_OUTPUT_TOKENS = 8192;
@@ -61,6 +62,9 @@ export default {
     }
     if (url.pathname === '/api/fetch-url' && request.method === 'POST') {
       return handleFetchUrl(request, headers);
+    }
+    if (url.pathname === '/api/tts' && request.method === 'POST') {
+      return handleTts(request, env, headers);
     }
     return json({ error: 'Not found' }, 404, headers);
   },
@@ -149,6 +153,68 @@ async function handleGenerate(request, env, headers) {
   }
 
   return json({ text }, 200, headers);
+}
+
+/**
+ * generateSpeech(text, voiceId) — abstracted so swapping TTS providers later
+ * only touches this function, not the frontend. Single-speaker per call by
+ * design: the podcast script is generated turn-by-turn so that editing or
+ * regenerating one line only re-synthesizes that one line's audio, not the
+ * whole podcast (see DEPLOY.md / DETECTION.md-style cost notes).
+ */
+async function generateSpeech(env, text, voiceId) {
+  const payload = {
+    model: TTS_MODEL,
+    input: text,
+    response_format: { type: 'audio' },
+    generation_config: { speech_config: [{ voice: voiceId }] },
+  };
+  const resp = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+    body: JSON.stringify(payload),
+  });
+  const rawText = await resp.text();
+  let data;
+  try { data = JSON.parse(rawText); } catch { data = null; }
+  if (!resp.ok) {
+    const msg = data?.error?.message || rawText.slice(0, 400) || `Upstream error (${resp.status})`;
+    throw new Error(msg);
+  }
+  return { data, rawText };
+}
+
+async function handleTts(request, env, headers) {
+  if (!env.GEMINI_API_KEY) {
+    return json({ error: 'Server is not configured with an API key yet.' }, 500, headers);
+  }
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON body.' }, 400, headers); }
+  const { text, voice } = body;
+  if (!text || typeof text !== 'string') return json({ error: 'Missing "text" string.' }, 400, headers);
+  if (!voice || typeof voice !== 'string') return json({ error: 'Missing "voice" string.' }, 400, headers);
+  if (text.length > 4000) return json({ error: 'That line is too long for one TTS call.' }, 400, headers);
+
+  let result;
+  try {
+    result = await generateSpeech(env, text, voice);
+  } catch (e) {
+    console.error('tts: upstream error', { error: String(e.message || e) });
+    return json({ error: String(e.message || e) }, 502, headers);
+  }
+
+  const outputStep = (result.data.steps || []).find((s) => s.type === 'model_output');
+  const audioBlock = (outputStep?.content || []).find((c) => c.type === 'audio');
+  if (!audioBlock || !audioBlock.data) {
+    console.error('tts: no audio block in response', { stepTypes: (result.data.steps || []).map((s) => s.type) });
+    return json({ error: 'The TTS provider returned no audio. Try again.' }, 502, headers);
+  }
+  return json({
+    audioBase64: audioBlock.data,
+    sampleRate: audioBlock.sample_rate || 24000,
+    channels: audioBlock.channels || 1,
+    mimeType: audioBlock.mime_type_string || audioBlock.mime_type || 'audio/l16',
+  }, 200, headers);
 }
 
 async function handleFetchUrl(request, headers) {

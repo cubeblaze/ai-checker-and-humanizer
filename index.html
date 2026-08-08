@@ -505,6 +505,56 @@ html.home-snap .hero, html.home-snap .home-section{scroll-snap-align:start; scro
 .quiz-opt.wrong{background:rgba(225,29,72,.09); border-color:rgba(225,29,72,.35); color:var(--tx)}
 .quiz-answer{font-size:12.5px; color:var(--tx-2); margin-top:9px; padding-top:9px; border-top:1px solid var(--line); line-height:1.55}
 
+/* ---------- podcast generator ---------- */
+.seg-ctl button small{display:block; font-size:10px; font-weight:600; opacity:.75; margin-top:2px}
+@media (max-width:480px){ #pcLength,#pcDifficulty{flex-wrap:wrap} #pcLength button,#pcDifficulty button{flex:1 1 40%} }
+.pc-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+@media (max-width:900px){ .pc-grid{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:600px){ .pc-grid{grid-template-columns:1fr} }
+.pc-card{padding:0; overflow:hidden; cursor:pointer; transition:var(--t-theme), transform .15s ease, box-shadow .15s ease}
+.pc-card:hover{transform:translateY(-2px); box-shadow:var(--sh-lg)}
+.pc-card-art{width:100%; aspect-ratio:16/9; display:block}
+.pc-card-bd{padding:13px 15px}
+.pc-card-bd h5{font-size:13.5px; font-weight:650; color:var(--tx); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pc-card-bd .mini{margin-bottom:2px}
+.pc-card-actions{display:flex; justify-content:space-between; align-items:center; margin-top:10px}
+
+.pc-voice-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:620px){ .pc-voice-grid{grid-template-columns:1fr} }
+.pc-voice-card{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r); padding:14px}
+.pc-voice-select{width:100%; padding:9px 11px; border-radius:var(--r-sm); border:1px solid var(--line);
+  background:var(--surface); color:var(--tx); font-size:13.5px; font-weight:600}
+
+.pc-script-turn{display:flex; gap:12px; padding:14px 0; border-bottom:1px solid var(--line)}
+.pc-script-turn:last-child{border-bottom:none}
+.pc-avatar{width:36px; height:36px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
+  font-weight:700; font-size:13px; color:#fff}
+.pc-avatar.s1{background:linear-gradient(145deg,var(--accent),var(--accent-2))}
+.pc-avatar.s2{background:linear-gradient(145deg,var(--ai),#0ea5c4)}
+.pc-turn-body{flex:1; min-width:0}
+.pc-turn-name{font-size:12px; font-weight:700; color:var(--tx-2); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em}
+.pc-turn-text{width:100%; min-height:52px; padding:9px 11px; border-radius:var(--r-sm); border:1px solid var(--line);
+  background:var(--surface-2); color:var(--tx); font-size:13.5px; line-height:1.6; resize:vertical; font-family:inherit}
+.pc-turn-actions{display:flex; gap:6px; margin-top:7px}
+
+.pc-player-hd{display:flex; gap:16px; align-items:center; margin-bottom:18px; flex-wrap:wrap}
+.pc-artwork{width:84px; height:84px; border-radius:var(--r); flex:0 0 auto; overflow:hidden; box-shadow:var(--sh)}
+.pc-artwork svg{width:100%; height:100%; display:block}
+.pc-player-meta{min-width:0; flex:1}
+.pc-player-meta h2{font-size:18px; margin-bottom:3px}
+.pc-controls{max-width:520px; margin:0 auto}
+.pc-seek-row{display:flex; align-items:center; gap:10px}
+.pc-seek-row input[type=range]{flex:1}
+#pcSpeedRow .btn.on{background:var(--accent); color:var(--accent-contrast); border-color:transparent}
+
+.pc-transcript{max-height:480px; overflow:auto; display:grid; gap:12px; scroll-behavior:smooth}
+.pc-turn-row{display:flex; gap:10px; padding:9px 10px; border-radius:var(--r-sm); cursor:pointer; transition:background .15s ease}
+.pc-turn-row:hover{background:var(--surface-2)}
+.pc-turn-row.active{background:var(--accent-soft)}
+.pc-turn-row .pc-avatar{width:28px; height:28px; font-size:11px}
+.pc-turn-row .pc-turn-text-static{font-size:13px; color:var(--tx-2); line-height:1.55}
+.pc-turn-row.active .pc-turn-text-static{color:var(--tx); font-weight:550}
+
 /* placeholder-page toast — feedback for not-yet-wired buttons (auth, writing analysis) */
 .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(8px);
   background:var(--tx); color:var(--bg); font-size:13px; font-weight:600; padding:10px 20px;
@@ -638,6 +688,10 @@ html.home-snap .hero, html.home-snap .home-section{scroll-snap-align:start; scro
     <button class="side-link" data-goto="study" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg>
       Study Generator
+    </button>
+    <button class="side-link" data-goto="podcast" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg>
+      Podcast Generator
     </button>
 
     <div class="sidebar-spacer"></div>
@@ -1082,6 +1136,204 @@ html.home-snap .hero, html.home-snap .home-section{scroll-snap-align:start; scro
   </div>
 
   <div id="studyBody" class="hide"></div>
+</div>
+</div>
+
+<!-- ============ PODCAST GENERATOR ============ -->
+<div id="panePodcast" class="hide">
+<div class="wrap">
+
+  <!-- Library / landing view -->
+  <div id="pcLibraryView">
+    <div class="row" style="justify-content:space-between; align-items:center; margin:26px 0 18px; flex-wrap:wrap; gap:10px">
+      <div class="section-lab" style="margin:0">Your podcasts</div>
+      <button class="btn primary" id="btnPcNew" type="button">+ New podcast</button>
+    </div>
+    <div id="pcLibraryEmpty" class="card">
+      <div class="card-bd">
+        <div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg>
+          <div>Turn your notes into a two-person study podcast. Click <b style="color:var(--tx)">+ New podcast</b> to get started.</div>
+        </div>
+      </div>
+    </div>
+    <div class="pc-grid" id="pcLibraryGrid"></div>
+  </div>
+
+  <!-- Setup view -->
+  <div id="pcSetupView" class="hide">
+    <button class="btn sm" id="btnPcBackToLibrary1" type="button">&larr; Back to library</button>
+    <div class="card" style="margin:16px 0 18px">
+      <div class="card-hd"><h2>1. Your notes</h2></div>
+      <div class="card-bd">
+        <textarea id="pcNotes" placeholder="Paste your class notes, study guide, research notes, or lecture notes here…" style="min-height:200px" spellcheck="false"></textarea>
+        <div class="row" style="justify-content:space-between; margin-top:10px; flex-wrap:wrap; gap:10px">
+          <div class="row" style="gap:8px">
+            <button class="btn" id="btnPcUpload" type="button">Upload file</button>
+            <input type="file" id="pcFileInput" accept=".txt,.md,.markdown,.docx,.pdf,.pptx" class="hide">
+          </div>
+          <span class="mini" id="pcNotesCnt">0 words</span>
+        </div>
+        <div class="mini hide" id="pcUploadStatus" style="margin-top:8px"></div>
+        <label class="chk" style="margin-top:12px"><input type="checkbox" id="pcFillGaps"><span>Fill in missing context<small>Lets the AI add general background knowledge beyond your notes. Off by default &mdash; the podcast will only use what's in your notes, and will say so when something isn't covered.</small></span></label>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd"><h2>2. Podcast settings</h2></div>
+      <div class="card-bd">
+        <div class="fld-lab">Length</div>
+        <div class="seg-ctl" id="pcLength">
+          <button data-len="quick" type="button">Quick Review<small>3&ndash;5 min</small></button>
+          <button data-len="standard" class="on" type="button">Standard<small>8&ndash;12 min</small></button>
+          <button data-len="deep" type="button">Deep Dive<small>15&ndash;20 min</small></button>
+          <button data-len="custom" type="button">Custom</button>
+        </div>
+        <div id="pcCustomLenRow" class="hide" style="margin-top:10px">
+          <input type="number" id="pcCustomMinutes" min="1" max="60" value="10" style="width:90px; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:var(--tx)"> <span class="mini">minutes</span>
+        </div>
+
+        <div class="fld-lab" style="margin-top:18px">Difficulty</div>
+        <div class="seg-ctl" id="pcDifficulty">
+          <button data-diff="beginner" type="button">Beginner</button>
+          <button data-diff="standard" class="on" type="button">Standard</button>
+          <button data-diff="advanced" type="button">Advanced</button>
+          <button data-diff="ap" type="button">AP / College</button>
+        </div>
+
+        <div class="fld-lab" style="margin-top:18px">Conversation style</div>
+        <div class="seg-ctl" id="pcStyle" style="flex-wrap:wrap">
+          <button data-style="friendly" class="on" type="button">Friendly Study Session</button>
+          <button data-style="professional" type="button">Professional Podcast</button>
+          <button data-style="casual" type="button">Casual Conversation</button>
+          <button data-style="debate" type="button">Debate / Discussion</button>
+          <button data-style="teacher" type="button">Teacher &amp; Student</button>
+          <button data-style="interview" type="button">Interview</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd"><h2>3. Voices</h2></div>
+      <div class="card-bd">
+        <div class="pc-voice-grid">
+          <div class="pc-voice-card">
+            <div class="fld-lab">Speaker 1</div>
+            <input type="text" id="pcName1" value="Alex" maxlength="20" style="width:100%; margin-bottom:8px; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:var(--tx); font-weight:650">
+            <select id="pcVoice1" class="pc-voice-select"></select>
+            <div class="mini" id="pcVoiceDesc1" style="margin:6px 0"></div>
+            <button class="btn sm" id="btnPcPreview1" type="button">&#9654; Preview</button>
+          </div>
+          <div class="pc-voice-card">
+            <div class="fld-lab">Speaker 2</div>
+            <input type="text" id="pcName2" value="Jordan" maxlength="20" style="width:100%; margin-bottom:8px; padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:var(--tx); font-weight:650">
+            <select id="pcVoice2" class="pc-voice-select"></select>
+            <div class="mini" id="pcVoiceDesc2" style="margin:6px 0"></div>
+            <button class="btn sm" id="btnPcPreview2" type="button">&#9654; Preview</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="justify-content:center; margin-bottom:30px">
+      <button class="btn primary wide" id="btnPcGenerateScript" type="button" style="max-width:360px">Generate Podcast Script</button>
+    </div>
+  </div>
+
+  <!-- Script review/editor view -->
+  <div id="pcScriptView" class="hide">
+    <button class="btn sm" id="btnPcBackToSetup" type="button">&larr; Back to settings</button>
+    <div class="row" style="justify-content:space-between; align-items:center; margin:16px 0 6px; flex-wrap:wrap; gap:10px">
+      <div>
+        <h2 id="pcScriptTitle" style="font-size:19px">Your podcast script</h2>
+        <p class="mini" id="pcScriptSubject"></p>
+      </div>
+      <div class="row" style="gap:8px">
+        <button class="btn sm" id="btnPcRegenAll" type="button">Regenerate entire script</button>
+      </div>
+    </div>
+    <div id="pcScriptStatus" class="mini" style="margin-bottom:10px"></div>
+    <div id="pcScriptList"></div>
+    <div class="row" style="justify-content:center; margin:22px 0 30px">
+      <button class="btn primary wide" id="btnPcGenerateAudio" type="button" style="max-width:360px">Generate Audio &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Player view -->
+  <div id="pcPlayerView" class="hide">
+    <button class="btn sm" id="btnPcBackToLibrary2" type="button">&larr; Back to library</button>
+    <div class="pc-player-card card" style="margin:16px 0 18px">
+      <div class="card-bd">
+        <div class="pc-player-hd">
+          <div class="pc-artwork" id="pcArtwork"></div>
+          <div class="pc-player-meta">
+            <h2 id="pcPlayerTitle">&nbsp;</h2>
+            <p class="mini" id="pcPlayerSubject"></p>
+            <div class="mini" id="pcNowSpeaking">&#127908; Currently speaking: <b>&mdash;</b></div>
+          </div>
+        </div>
+
+        <audio id="pcAudio" style="display:none"></audio>
+        <div class="pc-controls">
+          <div class="pc-seek-row">
+            <span class="mini" id="pcTimeCur">0:00</span>
+            <input type="range" id="pcSeek" min="0" max="1000" value="0" step="1">
+            <span class="mini" id="pcTimeTotal">0:00</span>
+          </div>
+          <div class="row" style="justify-content:center; gap:14px; margin-top:8px">
+            <button class="btn sm" id="btnPcSkipBack" type="button" title="Back 10s">&#9664;&#9664; 10s</button>
+            <button class="btn primary" id="btnPcPlayPause" type="button" style="min-width:90px">&#9654; Play</button>
+            <button class="btn sm" id="btnPcSkipFwd" type="button" title="Forward 10s">10s &#9654;&#9654;</button>
+          </div>
+          <div class="row" style="justify-content:space-between; margin-top:10px; flex-wrap:wrap; gap:10px">
+            <div class="row" style="gap:6px" id="pcSpeedRow">
+              <span class="mini">Speed</span>
+              <button data-speed="0.75" type="button" class="btn sm">0.75x</button>
+              <button data-speed="1" type="button" class="btn sm on">1x</button>
+              <button data-speed="1.25" type="button" class="btn sm">1.25x</button>
+              <button data-speed="1.5" type="button" class="btn sm">1.5x</button>
+              <button data-speed="2" type="button" class="btn sm">2x</button>
+            </div>
+            <div class="row" style="gap:6px; align-items:center">
+              <span class="mini">&#128266;</span>
+              <input type="range" id="pcVolume" min="0" max="1" step="0.05" value="1" style="width:90px">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-hd"><h2>Transcript</h2></div>
+        <div class="card-bd"><div id="pcTranscript" class="pc-transcript"></div></div>
+      </div>
+      <div class="stack">
+        <div class="card">
+          <div class="card-hd"><h2>Key takeaways</h2></div>
+          <div class="card-bd"><div id="pcTakeaways"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><h2>Study tools</h2></div>
+          <div class="card-bd">
+            <div class="row" style="gap:8px; flex-wrap:wrap">
+              <button class="btn sm" data-pcstudy="quiz" type="button">Generate quiz</button>
+              <button class="btn sm" data-pcstudy="flashcards" type="button">Flashcards</button>
+              <button class="btn sm" data-pcstudy="review" type="button">Review notes</button>
+            </div>
+            <div id="pcStudyResult" style="margin-top:12px"></div>
+            <div class="fld-lab" style="margin-top:16px">Ask about this podcast</div>
+            <div class="row" style="gap:8px; margin-top:6px">
+              <input type="text" id="pcAskInput" placeholder="e.g. why does this matter?" style="flex:1; padding:9px 11px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--surface); color:var(--tx); font-size:13px">
+              <button class="btn sm primary" id="btnPcAsk" type="button">Ask</button>
+            </div>
+            <div id="pcAskAnswer" class="mini" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 
@@ -3978,6 +4230,653 @@ wireUploadButton('btnStudyUpload', 'studyFileInput', function(t){ $('studyInp').
 });
 studyRenderSavedList();
 
+/* ============================================================
+   PODCAST GENERATOR
+   Pipeline: notes -> script generation -> accuracy validation ->
+   per-turn TTS -> local concatenation -> player. Every AI call reuses
+   the same backend proxy as the other features (callBackend/
+   callBackendJSON) so there is no separate key or provider to set up.
+   ============================================================ */
+
+/* ---- voice catalog: swappable config, not hardcoded into the logic ---- */
+var PODCAST_VOICES = [
+  {id:'Zephyr', style:'Bright'}, {id:'Puck', style:'Upbeat'}, {id:'Charon', style:'Informative'},
+  {id:'Kore', style:'Firm'}, {id:'Fenrir', style:'Excitable'}, {id:'Leda', style:'Youthful'},
+  {id:'Orus', style:'Firm'}, {id:'Aoede', style:'Breezy'}, {id:'Callirrhoe', style:'Easy-going'},
+  {id:'Autonoe', style:'Bright'}, {id:'Enceladus', style:'Breathy'}, {id:'Iapetus', style:'Clear'},
+  {id:'Umbriel', style:'Easy-going'}, {id:'Algieba', style:'Smooth'}, {id:'Despina', style:'Smooth'},
+  {id:'Erinome', style:'Clear'}, {id:'Algenib', style:'Gravelly'}, {id:'Rasalgethi', style:'Informative'},
+  {id:'Laomedeia', style:'Upbeat'}, {id:'Achernar', style:'Soft'}, {id:'Alnilam', style:'Firm'},
+  {id:'Schedar', style:'Even'}, {id:'Gacrux', style:'Mature'}, {id:'Pulcherrima', style:'Forward'},
+  {id:'Achird', style:'Friendly'}, {id:'Zubenelgenubi', style:'Casual'}, {id:'Vindemiatrix', style:'Gentle'},
+  {id:'Sadachbia', style:'Lively'}, {id:'Sadaltager', style:'Knowledgeable'}, {id:'Sulafat', style:'Warm'}
+];
+
+/* ---- PCM / WAV helpers (no server-side audio processing available, so
+   concatenation and containerization both happen client-side) ---- */
+function pcBase64ToBytes(b64){
+  var bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function pcConcatBytes(arrays){
+  var total = arrays.reduce(function(s,a){ return s+a.length; }, 0);
+  var out = new Uint8Array(total), off = 0;
+  arrays.forEach(function(a){ out.set(a, off); off += a.length; });
+  return out;
+}
+function pcSilenceBytes(seconds, sampleRate, channels){
+  var n = Math.round(seconds*sampleRate*channels*2); // 16-bit = 2 bytes/sample
+  return new Uint8Array(n); // zero-filled = silence
+}
+function pcMakeWavBlob(pcmBytes, sampleRate, channels){
+  var byteRate = sampleRate*channels*2, blockAlign = channels*2, dataSize = pcmBytes.length;
+  var buf = new ArrayBuffer(44), dv = new DataView(buf);
+  function wStr(off,s){ for(var i=0;i<s.length;i++) dv.setUint8(off+i, s.charCodeAt(i)); }
+  wStr(0,'RIFF'); dv.setUint32(4, 36+dataSize, true); wStr(8,'WAVE');
+  wStr(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,channels,true);
+  dv.setUint32(24,sampleRate,true); dv.setUint32(28,byteRate,true); dv.setUint16(32,blockAlign,true); dv.setUint16(34,16,true);
+  wStr(36,'data'); dv.setUint32(40,dataSize,true);
+  return new Blob([buf, pcmBytes], {type:'audio/wav'});
+}
+function pcBytesDurationSec(byteLength, sampleRate, channels){
+  return byteLength/(sampleRate*channels*2);
+}
+
+/* ---- backend TTS call ---- */
+async function callBackendTts(text, voice){
+  if(!backendConfigured()) throw new Error('This feature needs a one-time backend setup by the site owner. See DEPLOY.md.');
+  var resp;
+  try{
+    resp = await fetch(BACKEND_URL.replace(/\/$/,'') + '/api/tts', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text:text, voice:voice})
+    });
+  }catch(e){ throw new Error('Could not reach the AI backend. Check your internet connection and try again.'); }
+  var data; try{ data = await resp.json(); }catch(e){ throw new Error('The backend returned an unexpected response.'); }
+  if(!resp.ok || data.error) throw new Error(data.error || ('Backend error (status '+resp.status+').'));
+  return data; // {audioBase64, sampleRate, channels, mimeType}
+}
+
+/* ---- IndexedDB library ---- */
+var PC_DB_NAME = 'klarity.podcasts', PC_DB_VERSION = 1;
+function pcOpenDB(){
+  return new Promise(function(resolve,reject){
+    var req = indexedDB.open(PC_DB_NAME, PC_DB_VERSION);
+    req.onupgradeneeded = function(){
+      var db = req.result;
+      if(!db.objectStoreNames.contains('podcasts')) db.createObjectStore('podcasts', {keyPath:'id'});
+      if(!db.objectStoreNames.contains('audio')) db.createObjectStore('audio', {keyPath:'id'});
+    };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+async function pcSavePodcast(meta, audioBlob){
+  var db = await pcOpenDB();
+  return new Promise(function(resolve,reject){
+    var tx = db.transaction(['podcasts','audio'],'readwrite');
+    tx.objectStore('podcasts').put(meta);
+    tx.objectStore('audio').put({id:meta.id, blob:audioBlob});
+    tx.oncomplete = function(){ resolve(); };
+    tx.onerror = function(){ reject(tx.error); };
+  });
+}
+async function pcGetAllPodcasts(){
+  var db = await pcOpenDB();
+  return new Promise(function(resolve,reject){
+    var req = db.transaction('podcasts','readonly').objectStore('podcasts').getAll();
+    req.onsuccess = function(){ resolve((req.result||[]).sort(function(a,b){ return b.createdAt-a.createdAt; })); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+async function pcGetAudio(id){
+  var db = await pcOpenDB();
+  return new Promise(function(resolve,reject){
+    var req = db.transaction('audio','readonly').objectStore('audio').get(id);
+    req.onsuccess = function(){ resolve(req.result ? req.result.blob : null); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+async function pcDeletePodcast(id){
+  var db = await pcOpenDB();
+  return new Promise(function(resolve,reject){
+    var tx = db.transaction(['podcasts','audio'],'readwrite');
+    tx.objectStore('podcasts').delete(id);
+    tx.objectStore('audio').delete(id);
+    tx.oncomplete = function(){ resolve(); };
+    tx.onerror = function(){ reject(tx.error); };
+  });
+}
+
+/* ---- topic-based artwork: deterministic keyword match, no image-gen API ---- */
+var PC_ARTWORK_CATEGORIES = [
+  { keys:['biology','cell','organism','photosynthesis','genetics','dna','anatomy','ecosystem'], a:'#15803d', b:'#22c55e',
+    icon:'<path d="M12 2c-4 3-6 7-6 11a6 6 0 0 0 12 0c0-4-2-8-6-11z"/><path d="M12 13v9"/>' },
+  { keys:['chemistry','chemical','molecule','reaction','compound','element','acid','bond'], a:'#0891b2', b:'#22d3ee',
+    icon:'<circle cx="8" cy="8" r="2.6"/><circle cx="16" cy="8" r="2.6"/><circle cx="12" cy="16" r="2.6"/><path d="M9.9 9.6 11 14M14.1 9.6 13 14"/>' },
+  { keys:['physics','force','energy','motion','quantum','velocity','gravity','electric'], a:'#7c3aed', b:'#a78bfa',
+    icon:'<circle cx="12" cy="12" r="2.4"/><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(120 12 12)"/>' },
+  { keys:['history','war','revolution','empire','century','ancient','civilization','president'], a:'#b45309', b:'#f59e0b',
+    icon:'<path d="M4 10h16M6 10v9M10 10v9M14 10v9M18 10v9M3 21h18M12 3l9 5H3z"/>' },
+  { keys:['math','algebra','calculus','geometry','equation','theorem','derivative','integral'], a:'#dc2626', b:'#f87171',
+    icon:'<path d="M5 4h6M5 20h6M8 4v16M16 6l4 12M20 6l-4 12"/>' },
+  { keys:['literature','novel','poem','shakespeare','author','character','theme','narrative'], a:'#a21caf', b:'#e879f9',
+    icon:'<path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M8 8h6M8 12h6"/>' },
+  { keys:['economics','market','supply','demand','trade','finance','inflation','gdp'], a:'#0d9488', b:'#2dd4bf',
+    icon:'<path d="M3 17l6-6 4 4 8-8M21 7v6M15 7h6"/>' }
+];
+var PC_ARTWORK_DEFAULT = { a:'#334155', b:'#64748b', icon:'<path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/>' };
+function pcArtworkFor(subject){
+  var s = (subject||'').toLowerCase();
+  var cat = PC_ARTWORK_CATEGORIES.find(function(c){ return c.keys.some(function(k){ return s.indexOf(k)>-1; }); }) || PC_ARTWORK_DEFAULT;
+  var gid = 'g'+Math.random().toString(36).slice(2,9);
+  return '<svg viewBox="0 0 84 84" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="1">'+
+    '<stop offset="0" stop-color="'+cat.a+'"/><stop offset="1" stop-color="'+cat.b+'"/></linearGradient></defs>'+
+    '<rect width="84" height="84" fill="url(#'+gid+')"/>'+
+    '<g transform="translate(22,22)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.92">'+
+    '<g transform="scale(1.4)">'+cat.icon+'</g></g></svg>';
+}
+
+/* ---- state ---- */
+var pcState = null;
+function pcNewState(){
+  return {
+    id: null, notes:'', settings:{length:'standard', customMinutes:10, difficulty:'standard', style:'friendly', fillGaps:false},
+    speaker1:{name:'Alex', voice:'Kore'}, speaker2:{name:'Jordan', voice:'Puck'},
+    title:'', subject:'', turns:[], keyTakeaways:[],
+    audioBlob:null, audioUrl:null, createdAt:null
+  };
+}
+
+function pcShowView(name){
+  ['pcLibraryView','pcSetupView','pcScriptView','pcPlayerView'].forEach(function(id){
+    $(id).classList.toggle('hide', id!==name);
+  });
+  window.scrollTo(0,0);
+}
+
+/* ---- voice select population ---- */
+function pcPopulateVoiceSelect(sel, chosen){
+  sel.innerHTML = PODCAST_VOICES.map(function(v){
+    return '<option value="'+v.id+'"'+(v.id===chosen?' selected':'')+'>'+v.id+' — '+v.style+'</option>';
+  }).join('');
+}
+function pcInitVoiceUI(){
+  pcPopulateVoiceSelect($('pcVoice1'), pcState.speaker1.voice);
+  pcPopulateVoiceSelect($('pcVoice2'), pcState.speaker2.voice);
+  pcUpdateVoiceDesc(1); pcUpdateVoiceDesc(2);
+}
+function pcUpdateVoiceDesc(n){
+  var sel = $('pcVoice'+n).value;
+  var v = PODCAST_VOICES.find(function(x){ return x.id===sel; });
+  $('pcVoiceDesc'+n).textContent = v ? ('Style: '+v.style) : '';
+}
+
+var pcPreviewAudio = null;
+async function pcPreviewVoice(n){
+  var btn = $('btnPcPreview'+n);
+  var was = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  try{
+    var voice = $('pcVoice'+n).value;
+    var name = $('pcName'+n).value.trim() || ('Speaker '+n);
+    var sample = 'Hi, I\'m '+name+'. This is what I sound like in your podcast.';
+    var r = await callBackendTts(sample, voice);
+    var bytes = pcBase64ToBytes(r.audioBase64);
+    var blob = pcMakeWavBlob(bytes, r.sampleRate||24000, r.channels||1);
+    if(pcPreviewAudio){ pcPreviewAudio.pause(); }
+    pcPreviewAudio = new Audio(URL.createObjectURL(blob));
+    pcPreviewAudio.play();
+  }catch(e){
+    showToast(e.message || 'Could not preview that voice.');
+  }finally{
+    btn.disabled = false; btn.innerHTML = was;
+  }
+}
+
+/* ---- settings UI wiring ---- */
+function pcWireSegCtl(id, key, onChange){
+  Array.prototype.forEach.call($(id).children, function(b){
+    b.onclick = function(){
+      Array.prototype.forEach.call($(id).children, function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      if(onChange) onChange(b);
+    };
+  });
+}
+
+/* ---- script generation prompt ---- */
+var PC_LENGTH_MINUTES = { quick:4, standard:10, deep:17.5 };
+var PC_STYLE_LABEL = { friendly:'a friendly study session between two students who are reviewing material together',
+  professional:'a professional educational podcast with clear, polished delivery',
+  casual:'a casual, relaxed conversation between two friends who happen to be studying',
+  debate:'a respectful debate/discussion where the two speakers sometimes take different angles on the material',
+  teacher:'a teacher walking a curious student through the material, with the student asking real questions',
+  interview:'an interview format where one speaker interviews the other as a subject-matter expert' };
+var PC_DIFFICULTY_LABEL = { beginner:'a beginner who is new to this topic — use simple vocabulary and explain every term',
+  standard:'a general student audience — clear explanations, moderate vocabulary',
+  advanced:'an advanced student who already knows the basics — go deeper, use precise terminology',
+  ap:'an AP/college-level student — use accurate technical vocabulary and explore nuance and relationships between concepts' };
+
+function pcTargetMinutes(){
+  if(pcState.settings.length==='custom') return clamp(parseInt($('pcCustomMinutes').value,10)||10, 1, 60);
+  return PC_LENGTH_MINUTES[pcState.settings.length] || 10;
+}
+
+function buildPodcastScriptPrompt(){
+  var s = pcState.settings;
+  var minutes = pcTargetMinutes();
+  var targetWords = Math.round(minutes*150); // ~150 spoken words/minute
+  var s1 = pcState.speaker1.name, s2 = pcState.speaker2.name;
+  return 'You are writing a script for '+PC_STYLE_LABEL[s.style]+', for '+PC_DIFFICULTY_LABEL[s.difficulty]+'. '+
+    'The two speakers are named "'+s1+'" and "'+s2+'". They are studying the material in the notes below together.\n\n'+
+    'CRITICAL — make this sound like a real conversation between two people, not two voices taking turns reading facts:\n'+
+    '- Use natural conversational moments: genuine questions, follow-up questions, "wait, so...", "okay but...", brief reactions, clarifications, examples, comparisons, and summaries.\n'+
+    '- Speaker roles should shift naturally — sometimes '+s1+' explains something, sometimes '+s2+' does. Don\'t lock one speaker into "always asks, never explains."\n'+
+    '- Do NOT use filler words like "um", "uh", "like", or "you know" — natural does not mean sloppy.\n'+
+    '- Do NOT write stiff exchanges like "That is correct." Real people say things like "Right, exactly" or "Yeah, that tracks."\n\n'+
+    'STRUCTURE (don\'t linger on the opening — most of the podcast should be teaching):\n'+
+    '1. Brief opening — quickly introduce the topic\n'+
+    '2. Main concepts from the notes\n'+
+    '3. Deeper discussion — how concepts relate to each other\n'+
+    '4. Examples where they help\n'+
+    '5. A review where the speakers summarize the major ideas\n'+
+    '6. A quick recap of the most important points\n\n'+
+    'ACCURACY — this is critical, students will study from this:\n'+
+    (s.fillGaps
+      ? '- You may add general background knowledge beyond the notes where it helps understanding, but stay consistent with everything the notes actually say.\n'
+      : '- Use ONLY information from the notes below. Do NOT invent facts, statistics, dates, or claims not supported by the notes.\n'+
+        '- If a natural follow-up question would require information the notes don\'t cover, have a speaker say something like "Your notes don\'t give us enough to answer that, so let\'s stick with what we know" rather than inventing an answer.\n')+
+    '\nTarget length: approximately '+targetWords+' spoken words total (about '+minutes+' minutes at a natural pace).\n\n'+
+    'Respond with ONLY valid JSON (no markdown fences, no commentary) matching exactly this shape:\n'+
+    '{\n'+
+    '  "title": "a short, specific podcast title based on the notes",\n'+
+    '  "subject": "one or two words for the general subject area, e.g. Biology, U.S. History, Algebra",\n'+
+    '  "turns": [ {"speaker": 1 or 2, "text": "what this speaker says in this turn, 1-4 sentences"} ],\n'+
+    '  "keyTakeaways": ["most important point 1", "most important point 2", "..."]\n'+
+    '}\n\n'+
+    'Speaker 1 is "'+s1+'". Speaker 2 is "'+s2+'".\n\n'+
+    'NOTES:\n'+pcState.notes.slice(0,16000);
+}
+
+function buildPodcastValidationPrompt(turns){
+  var script = turns.map(function(t,i){ return '['+i+'] Speaker '+t.speaker+': '+t.text; }).join('\n');
+  return 'Below are the source notes and a generated podcast script. Check the script for any factual claims that are NOT '+
+    'supported by the notes (invented statistics, dates, names, or claims that go beyond what the notes say).\n\n'+
+    'Respond with ONLY valid JSON: {"flaggedIndices": [array of turn index numbers with unsupported claims], "explanation": "brief note on what was flagged, or empty string if none"}\n\n'+
+    'NOTES:\n'+pcState.notes.slice(0,16000)+'\n\nSCRIPT:\n'+script;
+}
+
+function buildPodcastFixPrompt(turns, flaggedIndices){
+  var flagged = flaggedIndices.map(function(i){ return '['+i+'] Speaker '+turns[i].speaker+': '+turns[i].text; }).join('\n');
+  return 'The following podcast script lines contain claims not supported by the source notes. Rewrite ONLY these lines '+
+    'so they stay strictly grounded in the notes — if the point can\'t be made accurately, replace it with an honest '+
+    'acknowledgment that the notes don\'t cover it, in the same conversational voice.\n\n'+
+    'Respond with ONLY valid JSON: {"turns": [{"index": <number>, "text": "<rewritten line>"}]}\n\n'+
+    'NOTES:\n'+pcState.notes.slice(0,16000)+'\n\nLINES TO FIX:\n'+flagged;
+}
+
+function pcSetStatus(msg, isError){
+  var el = $('pcScriptStatus');
+  el.innerHTML = isError ? ('<span class="bad-txt">'+esc(msg)+'</span>') : ('<span class="spin"></span>'+esc(msg));
+}
+
+async function runPodcastScriptGen(){
+  if(!pcState.notes.trim()){ showToast('Paste or upload your notes first.'); return; }
+  pcState.speaker1.name = $('pcName1').value.trim() || 'Alex';
+  pcState.speaker2.name = $('pcName2').value.trim() || 'Jordan';
+  pcState.speaker1.voice = $('pcVoice1').value;
+  pcState.speaker2.voice = $('pcVoice2').value;
+  pcState.settings.fillGaps = $('pcFillGaps').checked;
+
+  pcShowView('pcScriptView');
+  $('pcScriptList').innerHTML = '';
+  $('btnPcGenerateAudio').classList.add('hide');
+  $('btnPcGenerateScript').disabled = true;
+  try{
+    pcSetStatus('Analyzing notes and organizing concepts…');
+    var result = await callBackendJSON(buildPodcastScriptPrompt(), { maxOutputTokens: 4096 });
+    pcState.title = result.title || 'Untitled podcast';
+    pcState.subject = result.subject || 'General';
+    pcState.turns = (result.turns||[]).map(function(t){ return {speaker: t.speaker===2?2:1, text:t.text||''}; });
+    pcState.keyTakeaways = result.keyTakeaways || [];
+
+    pcSetStatus('Checking accuracy against your notes…');
+    try{
+      var val = await callBackendJSON(buildPodcastValidationPrompt(pcState.turns), { maxOutputTokens: 1024 });
+      if(!pcState.settings.fillGaps && val.flaggedIndices && val.flaggedIndices.length){
+        pcSetStatus('Fixing '+val.flaggedIndices.length+' unsupported line'+(val.flaggedIndices.length>1?'s':'')+'…');
+        var fix = await callBackendJSON(buildPodcastFixPrompt(pcState.turns, val.flaggedIndices), { maxOutputTokens: 2048 });
+        (fix.turns||[]).forEach(function(f){ if(pcState.turns[f.index]) pcState.turns[f.index].text = f.text; });
+      }
+    }catch(e){ /* validation is best-effort — a failure here shouldn't block showing the script */ }
+
+    $('pcScriptTitle').textContent = pcState.title;
+    $('pcScriptSubject').textContent = pcState.subject;
+    pcRenderScript();
+    $('pcScriptStatus').innerHTML = '';
+    $('btnPcGenerateAudio').classList.remove('hide');
+  }catch(e){
+    pcSetStatus(e.message || 'Could not generate the script. Try again.', true);
+  }finally{
+    $('btnPcGenerateScript').disabled = false;
+  }
+}
+
+function pcRenderScript(){
+  $('pcScriptList').innerHTML = pcState.turns.map(function(t, i){
+    var name = t.speaker===1 ? pcState.speaker1.name : pcState.speaker2.name;
+    var initial = name.slice(0,1).toUpperCase();
+    return '<div class="pc-script-turn" data-idx="'+i+'">'+
+      '<div class="pc-avatar s'+t.speaker+'">'+esc(initial)+'</div>'+
+      '<div class="pc-turn-body">'+
+        '<div class="pc-turn-name">'+esc(name)+'</div>'+
+        '<textarea class="pc-turn-text" data-idx="'+i+'">'+esc(t.text)+'</textarea>'+
+        '<div class="pc-turn-actions">'+
+          '<button class="btn sm" data-act="swap" data-idx="'+i+'" type="button">Change speaker</button>'+
+          '<button class="btn sm" data-act="regen" data-idx="'+i+'" type="button">Regenerate line</button>'+
+          '<button class="btn sm" data-act="del" data-idx="'+i+'" type="button">Delete</button>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
+
+  Array.prototype.forEach.call($('pcScriptList').querySelectorAll('.pc-turn-text'), function(ta){
+    ta.oninput = function(){ pcState.turns[parseInt(ta.getAttribute('data-idx'),10)].text = ta.value; };
+  });
+  Array.prototype.forEach.call($('pcScriptList').querySelectorAll('[data-act="del"]'), function(btn){
+    btn.onclick = function(){ pcState.turns.splice(parseInt(btn.getAttribute('data-idx'),10),1); pcRenderScript(); };
+  });
+  Array.prototype.forEach.call($('pcScriptList').querySelectorAll('[data-act="swap"]'), function(btn){
+    btn.onclick = function(){
+      var i = parseInt(btn.getAttribute('data-idx'),10);
+      pcState.turns[i].speaker = pcState.turns[i].speaker===1?2:1;
+      pcRenderScript();
+    };
+  });
+  Array.prototype.forEach.call($('pcScriptList').querySelectorAll('[data-act="regen"]'), function(btn){
+    btn.onclick = async function(){
+      var i = parseInt(btn.getAttribute('data-idx'),10);
+      var was = btn.textContent; btn.disabled = true; btn.textContent = 'Regenerating…';
+      try{
+        var t = pcState.turns[i];
+        var name = t.speaker===1?pcState.speaker1.name:pcState.speaker2.name;
+        var prev = pcState.turns[i-1] ? (pcState.turns[i-1].text) : '(start of podcast)';
+        var next = pcState.turns[i+1] ? (pcState.turns[i+1].text) : '(end of podcast)';
+        var prompt = 'Rewrite this one line of a two-person educational podcast, spoken by "'+name+'". '+
+          'Keep it natural and conversational, grounded only in the notes below, similar length to the original.\n\n'+
+          'Previous line: '+prev+'\nLine to rewrite: '+t.text+'\nNext line: '+next+'\n\n'+
+          'Respond with ONLY the rewritten line text, nothing else.\n\nNOTES:\n'+pcState.notes.slice(0,8000);
+        var newText = await callBackend(prompt, {maxOutputTokens:300});
+        pcState.turns[i].text = newText.trim().replace(/^["']|["']$/g,'');
+        pcRenderScript();
+      }catch(e){ showToast(e.message||'Could not regenerate that line.'); }
+      finally{ btn.disabled=false; btn.textContent=was; }
+    };
+  });
+}
+
+/* ---- audio generation ---- */
+var PC_PAUSE_SEC = 0.45;
+async function runGenerateAudio(){
+  if(!pcState.turns.length){ showToast('Nothing to generate yet.'); return; }
+  var btn = $('btnPcGenerateAudio');
+  btn.disabled = true;
+  var was = btn.innerHTML;
+  try{
+    var sampleRate = 24000, channels = 1;
+    var pieces = [];
+    for(var i=0;i<pcState.turns.length;i++){
+      btn.innerHTML = '<span class="spin"></span>Preparing voices &amp; generating audio ('+(i+1)+'/'+pcState.turns.length+')…';
+      var t = pcState.turns[i];
+      var voice = t.speaker===1 ? pcState.speaker1.voice : pcState.speaker2.voice;
+      var r = await callBackendTts(t.text, voice);
+      sampleRate = r.sampleRate||24000; channels = r.channels||1;
+      var bytes = pcBase64ToBytes(r.audioBase64);
+      t.pcm = bytes;
+      t.durationSec = pcBytesDurationSec(bytes.length, sampleRate, channels);
+      pieces.push(bytes);
+      if(i < pcState.turns.length-1) pieces.push(pcSilenceBytes(PC_PAUSE_SEC, sampleRate, channels));
+    }
+    btn.innerHTML = '<span class="spin"></span>Finalizing podcast…';
+    var cursor = 0;
+    pcState.turns.forEach(function(t, i){
+      t.startSec = cursor;
+      cursor += t.durationSec + (i<pcState.turns.length-1 ? PC_PAUSE_SEC : 0);
+    });
+    var finalPcm = pcConcatBytes(pieces);
+    pcState.audioBlob = pcMakeWavBlob(finalPcm, sampleRate, channels);
+    pcState.audioUrl = URL.createObjectURL(pcState.audioBlob);
+    pcState.createdAt = pcState.createdAt || Date.now();
+    pcState.id = pcState.id || ('pc'+Date.now());
+
+    await pcSavePodcastToLibrary();
+    pcOpenPlayer();
+  }catch(e){
+    showToast(e.message || 'Could not generate audio. Try again.');
+  }finally{
+    btn.disabled = false; btn.innerHTML = was;
+  }
+}
+
+async function pcSavePodcastToLibrary(){
+  var totalDuration = pcState.turns.length ? (pcState.turns[pcState.turns.length-1].startSec + pcState.turns[pcState.turns.length-1].durationSec) : 0;
+  var meta = {
+    id: pcState.id, title: pcState.title, subject: pcState.subject, createdAt: pcState.createdAt,
+    durationSec: totalDuration,
+    speaker1: pcState.speaker1, speaker2: pcState.speaker2,
+    turns: pcState.turns.map(function(t){ return {speaker:t.speaker, text:t.text, startSec:t.startSec, durationSec:t.durationSec}; }),
+    keyTakeaways: pcState.keyTakeaways,
+    notesPreview: pcState.notes.slice(0,300),
+    artwork: pcArtworkFor(pcState.subject)
+  };
+  await pcSavePodcast(meta, pcState.audioBlob);
+}
+
+/* ---- player ---- */
+function pcFmtTime(sec){
+  if(!isFinite(sec)||sec<0) sec=0;
+  var m = Math.floor(sec/60), s = Math.round(sec%60);
+  return m+':'+(s<10?'0':'')+s;
+}
+function pcOpenPlayer(){
+  $('pcPlayerTitle').textContent = pcState.title;
+  $('pcPlayerSubject').textContent = pcState.subject;
+  $('pcArtwork').innerHTML = pcArtworkFor(pcState.subject);
+  var audio = $('pcAudio');
+  audio.src = pcState.audioUrl;
+  audio.playbackRate = 1;
+  $('pcVolume').value = 1;
+  pcRenderTranscript();
+  pcRenderTakeaways();
+  $('pcStudyResult').innerHTML = '';
+  $('pcAskAnswer').textContent = '';
+  pcShowView('pcPlayerView');
+}
+function pcRenderTakeaways(){
+  $('pcTakeaways').innerHTML = pcState.keyTakeaways.length
+    ? issueListHtml(pcState.keyTakeaways)
+    : '<p class="mini">No key takeaways were generated for this podcast.</p>';
+}
+function pcRenderTranscript(){
+  $('pcTranscript').innerHTML = pcState.turns.map(function(t,i){
+    var name = t.speaker===1?pcState.speaker1.name:pcState.speaker2.name;
+    return '<div class="pc-turn-row" data-idx="'+i+'">'+
+      '<div class="pc-avatar s'+t.speaker+'">'+esc(name.slice(0,1).toUpperCase())+'</div>'+
+      '<div><div class="pc-turn-name">'+esc(name)+'</div><div class="pc-turn-text-static">'+esc(t.text)+'</div></div></div>';
+  }).join('');
+  Array.prototype.forEach.call($('pcTranscript').querySelectorAll('.pc-turn-row'), function(row){
+    row.onclick = function(){
+      var i = parseInt(row.getAttribute('data-idx'),10);
+      $('pcAudio').currentTime = pcState.turns[i].startSec;
+      $('pcAudio').play();
+    };
+  });
+}
+function pcUpdateNowPlaying(t){
+  var idx = -1;
+  for(var i=0;i<pcState.turns.length;i++){ if(t >= pcState.turns[i].startSec) idx = i; else break; }
+  var rows = $('pcTranscript').querySelectorAll('.pc-turn-row');
+  Array.prototype.forEach.call(rows, function(row,i){ row.classList.toggle('active', i===idx); });
+  if(idx>-1){
+    var name = pcState.turns[idx].speaker===1?pcState.speaker1.name:pcState.speaker2.name;
+    $('pcNowSpeaking').innerHTML = '&#127908; Currently speaking: <b>'+esc(name)+'</b>';
+    if(rows[idx]) rows[idx].scrollIntoView({block:'nearest', behavior:'smooth'});
+  }
+}
+
+(function initPlayerControls(){
+  var audio = $('pcAudio');
+  $('btnPcPlayPause').onclick = function(){
+    if(audio.paused){ audio.play(); } else { audio.pause(); }
+  };
+  audio.addEventListener('play', function(){ $('btnPcPlayPause').innerHTML = '&#10074;&#10074; Pause'; });
+  audio.addEventListener('pause', function(){ $('btnPcPlayPause').innerHTML = '&#9654; Play'; });
+  audio.addEventListener('loadedmetadata', function(){ $('pcTimeTotal').textContent = pcFmtTime(audio.duration); });
+  audio.addEventListener('timeupdate', function(){
+    if(!audio.duration) return;
+    $('pcSeek').value = Math.round((audio.currentTime/audio.duration)*1000);
+    $('pcTimeCur').textContent = pcFmtTime(audio.currentTime);
+    pcUpdateNowPlaying(audio.currentTime);
+  });
+  $('pcSeek').oninput = function(){
+    if(audio.duration) audio.currentTime = (parseInt($('pcSeek').value,10)/1000)*audio.duration;
+  };
+  $('btnPcSkipBack').onclick = function(){ audio.currentTime = Math.max(0, audio.currentTime-10); };
+  $('btnPcSkipFwd').onclick = function(){ audio.currentTime = Math.min(audio.duration||0, audio.currentTime+10); };
+  $('pcVolume').oninput = function(){ audio.volume = parseFloat($('pcVolume').value); };
+  Array.prototype.forEach.call($('pcSpeedRow').querySelectorAll('[data-speed]'), function(btn){
+    btn.onclick = function(){
+      Array.prototype.forEach.call($('pcSpeedRow').querySelectorAll('[data-speed]'), function(x){ x.classList.remove('on'); });
+      btn.classList.add('on');
+      audio.playbackRate = parseFloat(btn.getAttribute('data-speed'));
+    };
+  });
+})();
+
+/* ---- study tools (scoped to the podcast transcript) ---- */
+function pcTranscriptText(){
+  return pcState.turns.map(function(t){ return (t.speaker===1?pcState.speaker1.name:pcState.speaker2.name)+': '+t.text; }).join('\n');
+}
+async function runPodcastStudy(kind){
+  var el = $('pcStudyResult');
+  el.innerHTML = aiLoadingHtml('Working on it…');
+  try{
+    var prompt, data;
+    if(kind==='quiz'){
+      prompt = 'Create a multiple-choice quiz based ONLY on this podcast transcript. Respond with ONLY valid JSON: '+
+        '{"questions":[{"question":"...","options":["A","B","C","D"],"correctIndex":0,"explanation":"..."}]}. 5-8 questions.\n\nTRANSCRIPT:\n'+pcTranscriptText();
+      data = await callBackendJSON(prompt, {maxOutputTokens:3072});
+      el.innerHTML = studyRenderMcq(data); studyWireMcq(el, data);
+    } else if(kind==='flashcards'){
+      prompt = 'Create study flashcards based ONLY on this podcast transcript. Respond with ONLY valid JSON: '+
+        '{"flashcards":[{"front":"...","back":"..."}]}. 8-14 flashcards.\n\nTRANSCRIPT:\n'+pcTranscriptText();
+      data = await callBackendJSON(prompt, {maxOutputTokens:3072});
+      el.innerHTML = studyRenderFlashcards(data); studyWireFlashcards(el, data);
+    } else if(kind==='review'){
+      prompt = 'Create a concise study sheet based ONLY on this podcast transcript. Respond with ONLY valid JSON: '+
+        '{"sections":[{"heading":"...","content":"..."}], "memoryTips":["..."]}.\n\nTRANSCRIPT:\n'+pcTranscriptText();
+      data = await callBackendJSON(prompt, {maxOutputTokens:3072});
+      el.innerHTML = studyRenderGuide(data);
+    }
+  }catch(e){
+    el.innerHTML = aiErrorHtml(e);
+  }
+}
+async function runPodcastAsk(){
+  var q = $('pcAskInput').value.trim();
+  if(!q) return;
+  $('pcAskAnswer').innerHTML = '<span class="spin"></span>Thinking…';
+  try{
+    var prompt = 'Answer this student\'s question using ONLY the information in this podcast transcript. If the transcript '+
+      'doesn\'t cover it, say so honestly rather than guessing.\n\nTRANSCRIPT:\n'+pcTranscriptText()+'\n\nQUESTION:\n'+q;
+    var answer = await callBackend(prompt, {maxOutputTokens:600});
+    $('pcAskAnswer').textContent = answer;
+  }catch(e){
+    $('pcAskAnswer').innerHTML = '<span class="bad-txt">'+esc(e.message||'Could not answer that.')+'</span>';
+  }
+}
+
+/* ---- library ---- */
+async function pcRenderLibrary(){
+  var list = await pcGetAllPodcasts();
+  $('pcLibraryEmpty').classList.toggle('hide', list.length>0);
+  $('pcLibraryGrid').innerHTML = list.map(function(p){
+    return '<div class="pc-card card" data-id="'+p.id+'">'+
+      '<div class="pc-card-art">'+(p.artwork||pcArtworkFor(p.subject))+'</div>'+
+      '<div class="pc-card-bd">'+
+        '<h5>'+esc(p.title)+'</h5>'+
+        '<div class="mini">'+esc(p.subject)+' &middot; '+pcFmtTime(p.durationSec)+'</div>'+
+        '<div class="mini">Created '+new Date(p.createdAt).toLocaleDateString()+'</div>'+
+        '<div class="pc-card-actions">'+
+          '<button class="btn sm primary" data-act="play" data-id="'+p.id+'" type="button">&#9654; Play</button>'+
+          '<button class="btn sm" data-act="delete" data-id="'+p.id+'" type="button">Delete</button>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
+  Array.prototype.forEach.call($('pcLibraryGrid').querySelectorAll('[data-act="play"]'), function(btn){
+    btn.onclick = async function(){ await pcLoadFromLibrary(btn.getAttribute('data-id')); };
+  });
+  Array.prototype.forEach.call($('pcLibraryGrid').querySelectorAll('[data-act="delete"]'), function(btn){
+    btn.onclick = async function(e){
+      e.stopPropagation();
+      await pcDeletePodcast(btn.getAttribute('data-id'));
+      pcRenderLibrary();
+    };
+  });
+}
+async function pcLoadFromLibrary(id){
+  var list = await pcGetAllPodcasts();
+  var meta = list.find(function(p){ return p.id===id; });
+  if(!meta) return;
+  var blob = await pcGetAudio(id);
+  pcState = pcNewState();
+  pcState.id = meta.id; pcState.title = meta.title; pcState.subject = meta.subject;
+  pcState.createdAt = meta.createdAt; pcState.speaker1 = meta.speaker1; pcState.speaker2 = meta.speaker2;
+  pcState.turns = meta.turns; pcState.keyTakeaways = meta.keyTakeaways || [];
+  pcState.audioBlob = blob; pcState.audioUrl = blob ? URL.createObjectURL(blob) : null;
+  if(!pcState.audioUrl){ showToast('This podcast\'s audio could not be found.'); return; }
+  pcOpenPlayer();
+}
+
+/* ---- top-level wiring ---- */
+function pcResetSetupForm(){
+  pcState = pcNewState();
+  $('pcNotes').value = ''; pcUpdWordCount();
+  $('pcName1').value = pcState.speaker1.name; $('pcName2').value = pcState.speaker2.name;
+  $('pcFillGaps').checked = false;
+  pcInitVoiceUI();
+  pcWireSegCtl('pcLength','length', function(b){ pcState.settings.length = b.getAttribute('data-len'); $('pcCustomLenRow').classList.toggle('hide', pcState.settings.length!=='custom'); });
+  pcWireSegCtl('pcDifficulty','difficulty', function(b){ pcState.settings.difficulty = b.getAttribute('data-diff'); });
+  pcWireSegCtl('pcStyle','style', function(b){ pcState.settings.style = b.getAttribute('data-style'); });
+}
+function pcUpdWordCount(){ $('pcNotesCnt').textContent = wordCount($('pcNotes').value)+' words'; }
+
+$('btnPcNew').onclick = function(){ pcResetSetupForm(); pcShowView('pcSetupView'); };
+$('btnPcBackToLibrary1').onclick = function(){ pcRenderLibrary(); pcShowView('pcLibraryView'); };
+$('btnPcBackToLibrary2').onclick = function(){ if($('pcAudio')) $('pcAudio').pause(); pcRenderLibrary(); pcShowView('pcLibraryView'); };
+$('btnPcBackToSetup').onclick = function(){ pcShowView('pcSetupView'); };
+$('btnPcGenerateScript').onclick = function(){ pcState.notes = $('pcNotes').value; runPodcastScriptGen(); };
+$('btnPcRegenAll').onclick = function(){ runPodcastScriptGen(); };
+$('btnPcGenerateAudio').onclick = runGenerateAudio;
+$('pcNotes').addEventListener('input', pcUpdWordCount);
+$('pcVoice1').addEventListener('change', function(){ pcUpdateVoiceDesc(1); });
+$('pcVoice2').addEventListener('change', function(){ pcUpdateVoiceDesc(2); });
+$('btnPcPreview1').onclick = function(){ pcPreviewVoice(1); };
+$('btnPcPreview2').onclick = function(){ pcPreviewVoice(2); };
+Array.prototype.forEach.call(document.querySelectorAll('[data-pcstudy]'), function(btn){
+  btn.onclick = function(){ runPodcastStudy(btn.getAttribute('data-pcstudy')); };
+});
+$('btnPcAsk').onclick = runPodcastAsk;
+$('pcAskInput').addEventListener('keydown', function(e){ if(e.key==='Enter') runPodcastAsk(); });
+wireUploadButton('btnPcUpload', 'pcFileInput', function(t){ $('pcNotes').value = t; pcUpdWordCount(); }, function(m,c){
+  $('pcUploadStatus').textContent = m; $('pcUploadStatus').className = 'mini '+c; $('pcUploadStatus').classList.remove('hide');
+});
+
+pcResetSetupForm();
+pcRenderLibrary();
+
 /* lightweight routing. Every destination is reached the same way now: the
    sidebar drawer (opened from the hamburger), the Home dashboard's action
    cards, or any other [data-goto] control. */
@@ -3990,9 +4889,10 @@ var PANES = {
   coach:    {pane:'paneCoach'},
   research: {pane:'paneResearch'},
   study:    {pane:'paneStudy'},
+  podcast:  {pane:'panePodcast'},
   settings: {pane:'paneSettings'}
 };
-var NO_ENGINEBAR_PANES = {home:1, writing:1, rubric:1, coach:1, research:1, study:1, settings:1};
+var NO_ENGINEBAR_PANES = {home:1, writing:1, rubric:1, coach:1, research:1, study:1, podcast:1, settings:1};
 /* Routing lives in the URL hash (#home / #detect / #human / ...) rather than
    only in JS state, for two reasons a plain classList toggle can't give:
    reloading the page must land back on the same pane instead of resetting to
