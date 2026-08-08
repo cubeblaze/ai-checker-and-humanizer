@@ -264,6 +264,22 @@ textarea.dragover{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accen
   color:var(--tx-2); margin-left:10px}
 .flagitem .why{display:block; color:var(--tx-3); font-size:11px; margin-top:6px; line-height:1.45}
 
+/* ---------- detector explainability & paragraph report ---------- */
+.explain-list{list-style:none; display:grid; gap:7px; padding:0; margin:0}
+.explain-list li{font-size:12.75px; color:var(--tx-2); line-height:1.5; padding-left:18px; position:relative}
+.explain-list li::before{content:'●'; position:absolute; left:0; top:0; color:var(--accent); font-size:8px; line-height:2.1}
+.explain-list.warn li::before{color:var(--warn)}
+.para-item{display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--line)}
+.para-item:last-child{border-bottom:none}
+.para-badge{flex:0 0 auto; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  padding:3px 8px; border-radius:99px; margin-top:1px; white-space:nowrap}
+.para-badge.low{background:var(--ok-soft); color:var(--ok)}
+.para-badge.uncertain{background:rgba(217,119,6,.14); color:var(--warn)}
+.para-badge.high{background:var(--ai-soft); color:var(--ai)}
+.para-body{flex:1; min-width:0}
+.para-body .p-meta{font-size:11px; color:var(--tx-3); margin-bottom:3px}
+.para-body .p-preview{font-size:12.5px; color:var(--tx-2); line-height:1.5}
+
 /* ---------- humanizer ---------- */
 #out{white-space:pre-wrap; word-wrap:break-word; line-height:1.85; background:var(--surface-2);
   border:1px solid var(--line); border-radius:var(--r); padding:17px; min-height:200px;
@@ -1128,6 +1144,7 @@ html.home-snap .hero, html.home-snap .home-section{scroll-snap-align:start; scro
             </div>
             <div class="score-meta">
               <span class="pill lo" id="verdict">&mdash;</span>
+              <span class="mini" id="confidenceNote" style="margin-left:8px"></span>
               <p class="verdict-note" id="verdictNote"></p>
             </div>
           </div>
@@ -1149,6 +1166,29 @@ html.home-snap .hero, html.home-snap .home-section{scroll-snap-align:start; scro
     <div class="card hide" id="flagCard">
       <div class="card-hd"><h2>Flagged sentences</h2></div>
       <div class="card-bd"><div class="flaglist" id="flaglist"></div></div>
+    </div>
+
+    <div class="card hide" id="explainCard">
+      <div class="card-hd"><h2>Why this result</h2></div>
+      <div class="card-bd">
+        <div class="mini" style="font-weight:650; color:var(--tx); margin-bottom:6px">Primary signals</div>
+        <ul class="explain-list" id="primarySignalsList"></ul>
+        <div class="mini" style="font-weight:650; color:var(--tx); margin:12px 0 6px">Limitations</div>
+        <ul class="explain-list warn" id="limitationsList"></ul>
+      </div>
+    </div>
+
+    <div class="card hide" id="paragraphCard">
+      <div class="card-hd"><h2>Paragraph-level analysis</h2></div>
+      <div class="card-bd"><div id="paragraphList"></div></div>
+    </div>
+
+    <div class="note" style="border-color:var(--line-strong)">
+      <div class="note-hd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+        Not proof of anything
+      </div>
+      AI-writing detection is probabilistic. It can be wrong in both directions — flagging genuine human writing (especially formal, well-edited, or ESL writing) and missing AI text that&rsquo;s been lightly edited. Treat this report as one input to a conversation with a student, never as a verdict on its own.
     </div>
 
     <div class="note">
@@ -1268,6 +1308,7 @@ html.home-snap .hero, html.home-snap .home-section{scroll-snap-align:start; scro
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<script src="detector-core.js"></script>
 <script>
 /* ============================================================
    DATA
@@ -1888,7 +1929,12 @@ function analyze(text){
                      + 0.32*clamp(docHedge/3.2,0,1)
                      + 0.28*clamp(docSpec/1.60,0,1), 0, 1);
 
-  /* document prior in logit space */
+  /* document prior in logit space — kept as the per-sentence conditioning
+     prior below (it still needs a doc-level anchor for that), but NOT used
+     as the final headline number any more: patScore leans partly on the
+     AI_WORDS/AI_PHRASES lexicon, and the headline score for this offline
+     fallback should not rest primarily on a word list. See combineSignals
+     below for the actual reported document-level probability. */
   var docZ = -1.30
     + 2.30*perpScore
     + 3.00*burstScore
@@ -1974,7 +2020,26 @@ function analyze(text){
   }
 
   var flaggedWords = aiWords+paraWords;
-  var pct = total>0 ? Math.round(flaggedWords/total*100) : 0;
+
+  // ---- headline number: multi-signal combination, no transformer available ----
+  var sentenceLens2 = items.map(function(it){ return it.n; });
+  var paragraphs2 = text.split(/\n\s*\n/).map(function(p){return p.trim();}).filter(Boolean);
+  var sig2b = computeStatStyloSignals(text, allW, sentenceLens2, paragraphs2, openers);
+  var combined = DetectorCore.combineSignals(null, sig2b.statisticalP, sig2b.stylometricP, {
+    wordCount: total, modelsAgree: null, chunkReliableFraction: paragraphs2.length ? 1 : 0
+  });
+  var pct = Math.round(combined.probability*100);
+
+  var primarySignals = [];
+  if(sig2b.detail.burst.uniformity>0.6) primarySignals.push('Sentence lengths are unusually uniform (low burstiness)');
+  if(sig2b.detail.burst.uniformity<0.3) primarySignals.push('Sentence lengths vary naturally (human-typical burstiness)');
+  if(sig2b.detail.vocab.diversityDeficit>0.55) primarySignals.push('Vocabulary is more repetitive than typical writing');
+  if(sig2b.detail.rep.score>0.4) primarySignals.push('Noticeable reuse of the same short phrases');
+  if(aiPer100>2) primarySignals.push('Some phrasing common in AI writing (weak signal on its own)');
+  if(!primarySignals.length) primarySignals.push('No single signal dominates — this is a blend of small effects');
+  var limitations = ['This is the offline statistical fallback (no internet access to the transformer models) — treat it as a weaker signal than the primary detector',
+    'This is a statistical estimate, not proof of AI use — treat it as one input among several'];
+  if(combined.wordCountTier!=='standard') limitations.push('Document is on the short side, which lowers confidence for any detector');
 
   return {
     engine:'heuristic',
@@ -1985,7 +2050,8 @@ function analyze(text){
     aiPer100:aiPer100, openerVar:openerVar, emRate:emRate,
     msd:msd, commaMean:commaMean, rep3:rep3, shortRate:shortRate,
     hedge:docHedge, spec:docSpec,
-    reliable: total>=150
+    reliable: total>=150,
+    combined: combined, paragraphReport: [], primarySignals: primarySignals, limitations: limitations
   };
 }
 
@@ -2763,6 +2829,62 @@ function chunkForAnalysis(text, maxChars){
 var CHUNK_CHARS = 1800;
 var MAX_CHUNKS = 80;    // ceiling on scoring passes for pathologically long input
 
+/* ============================================================
+   MULTI-SIGNAL COMBINATION — shared by both the transformer-backed
+   path (analyzeLocal) and the offline heuristic fallback (analyze).
+   See detector-core.js for the full rationale and honest limitations
+   of each signal; this function just gathers the raw text-level
+   inputs those pure functions need.
+   ============================================================ */
+function computeStatStyloSignals(text, allWords, sentenceLens, paragraphs, openers){
+  var D = DetectorCore;
+  var burst = D.burstiness(sentenceLens);
+  var vocab = D.vocabDiversity(allWords);
+  var rep = D.selfRepetition(allWords);
+  var docSurp = surprisal(allWords);
+  var uElev = clamp((docSurp-7.40)/1.30, 0, 1);
+
+  // statistical layer: rhythm + vocabulary + repetition + register, all
+  // genuine corpus-frequency / distributional measures, no phrase lists.
+  var statisticalP = clamp(
+    0.34*burst.uniformity + 0.24*vocab.diversityDeficit + 0.22*rep.score + 0.20*uElev,
+    0, 1);
+
+  var fw = D.functionWordProfile(allWords);
+  var openerStat = D.openerRepetition(openers);
+  var discourse = D.discourseMarkerDensity(paragraphs);
+  var stylometricP = clamp(0.5*fw.score + 0.3*openerStat.score + 0.2*discourse.score, 0, 1);
+
+  return {
+    statisticalP: statisticalP, stylometricP: stylometricP,
+    detail: { burst:burst, vocab:vocab, rep:rep, uElev:uElev, fw:fw, openerStat:openerStat, discourse:discourse, docSurp:docSurp }
+  };
+}
+
+/* Per-paragraph breakdown for the mixed-authorship report. Each real
+   paragraph (split on blank lines) is matched to the chunk(s) covering it;
+   when a paragraph was too short to be scored on its own it says so
+   explicitly rather than inheriting a merged neighbor's score silently. */
+function computeParagraphReport(text, chunks, chunkPs, chunkReliableFlags, chunkParaCounts){
+  var re = /\n\s*\n/g, m, last=0, spans=[];
+  while((m = re.exec(text)) !== null){ spans.push({start:last, end:m.index}); last = re.lastIndex; }
+  spans.push({start:last, end:text.length});
+  spans = spans.filter(function(s){ return text.slice(s.start,s.end).trim(); });
+
+  var out = [], ci = 0;
+  for(var i=0;i<spans.length;i++){
+    while(ci < chunks.length-1 && spans[i].start >= chunks[ci].end) ci++;
+    var p = chunkPs[ci], reliable = chunkReliableFlags[ci], merged = chunkParaCounts[ci] > 1;
+    var cat = !reliable ? 'uncertain' : (p>=0.65?'high':(p>=0.35?'uncertain':'low'));
+    out.push({
+      index: i+1, words: wordCount(text.slice(spans[i].start,spans[i].end)),
+      probability: p, category: cat, reliable: reliable, merged: merged,
+      preview: text.slice(spans[i].start,spans[i].end).trim().slice(0,90)
+    });
+  }
+  return out;
+}
+
 async function analyzeLocal(text, onStatus){
   await ensureModels(onStatus);
   if(onStatus) WORKER.onStatus = onStatus;
@@ -2787,11 +2909,17 @@ async function analyzeLocal(text, onStatus){
 
   var w = chunkTexts.map(function(t){ return wordCount(t); });
   var tot = w.reduce(function(a,b){return a+b;},0) || 1;
-  var docP = 0, dPer0 = [], dPer1 = [];
+  var docP = 0, dPer0 = [], dPer1 = [], chunkPs = [], chunkReliableFlags = [], chunkParaCounts = [];
   for(i=0;i<scores.length;i++){
     docP += scores[i].mean * w[i]/tot;
     dPer0.push(scores[i].per[0]); dPer1.push(scores[i].per[1]);
+    chunkPs.push(clamp(scores[i].mean,0.01,0.99));
+    chunkReliableFlags.push(w[i] >= MIN_CHUNK_WORDS);
+    chunkParaCounts.push(chunks[i].paras || 1);
   }
+  var modelGap = mean(dPer0.map(function(p0,idx){ return Math.abs(p0-dPer1[idx]); }));
+  var modelsAgree = clamp(1 - modelGap/0.5, 0, 1);
+  var reliableChunkFraction = chunkReliableFlags.length ? chunkReliableFlags.filter(Boolean).length/chunkReliableFlags.length : 0;
 
   var ci = 0;
   var total = wordCount(text), flagged = 0, flaggedWords = 0;
@@ -2814,14 +2942,48 @@ async function analyzeLocal(text, onStatus){
     if(it.p>=0.5){ flagged++; flaggedWords += it.n; }
   }
 
+  // ---- multi-signal document-level combination (not the transformer score alone) ----
+  var allWords = words(text);
+  var sentenceLens = items.map(function(it){ return it.n; });
+  var paragraphs = text.split(/\n\s*\n/).map(function(p){return p.trim();}).filter(Boolean);
+  var openers = {}; items.forEach(function(it){ var op = words(it.raw)[0]; if(op) openers[op]=(openers[op]||0)+1; });
+  var sig2 = computeStatStyloSignals(text, allWords, sentenceLens, paragraphs, openers);
+
+  var combined = DetectorCore.combineSignals(docP, sig2.statisticalP, sig2.stylometricP, {
+    wordCount: total, modelsAgree: modelsAgree, chunkReliableFraction: reliableChunkFraction
+  });
+
+  var paragraphReport = computeParagraphReport(text, chunks, chunkPs, chunkReliableFlags, chunkParaCounts);
+
+  // ---- explainability: which signals pushed the score, and what limits it ----
+  var primarySignals = [], limitations = [];
+  if(docP>=0.6) primarySignals.push('Transformer classifiers read most passages as AI-typical ('+Math.round(docP*100)+'% average)');
+  if(docP<0.4) primarySignals.push('Transformer classifiers read most passages as human-typical ('+Math.round((1-docP)*100)+'% human-range)');
+  if(sig2.detail.burst.uniformity>0.6) primarySignals.push('Sentence lengths are unusually uniform (low burstiness)');
+  if(sig2.detail.burst.uniformity<0.3) primarySignals.push('Sentence lengths vary naturally (human-typical burstiness)');
+  if(sig2.detail.vocab.diversityDeficit>0.55) primarySignals.push('Vocabulary is more repetitive than typical writing');
+  if(sig2.detail.rep.score>0.4) primarySignals.push('Noticeable reuse of the same short phrases');
+  if(sig2.detail.fw.reliable && sig2.detail.fw.score>0.5) primarySignals.push('Function-word usage is unusually even/predictable');
+  if(sig2.detail.discourse.reliable && sig2.detail.discourse.score>0.4) primarySignals.push('Heavy, mechanical use of transition words at paragraph starts');
+  if(!primarySignals.length) primarySignals.push('No single signal dominates — this is a blend of small effects');
+
+  if(combined.wordCountTier!=='standard') limitations.push('Document is on the short side, which lowers confidence for any detector');
+  if(modelGap>0.3) limitations.push('The two transformer models disagree with each other on parts of this text');
+  if(paragraphs.length<2) limitations.push('Single paragraph — no cross-paragraph consistency check was possible');
+  if(reliableChunkFraction<1) limitations.push('One or more sections were too short to score independently and were grouped with neighbors');
+  limitations.push('This is a statistical estimate, not proof of AI use — treat it as one input among several');
+
   return {
     engine:'local', items:items, total:total, segments:items.length, flagged:flagged,
-    pct: total>0 ? Math.round(flaggedWords/total*100) : 0,
+    pct: Math.round(combined.probability*100),
     docP: docP, perModel: [mean(dPer0), mean(dPer1)],
     windows: chunks.length,
     perp: clamp(docP,0,1), burst: clamp(docP,0,1),
     pat: clamp(mean(dPer0),0,1), human: clamp(1-docP,0,1),
-    reliable: total>=200
+    reliable: total>=200,
+    combined: combined, paragraphReport: paragraphReport,
+    primarySignals: primarySignals, limitations: limitations,
+    signalDetail: sig2.detail
   };
 }
 
@@ -4047,7 +4209,8 @@ $('hinp').addEventListener('input',updh);
 
 $('btnSample').onclick=function(){ $('inp').value=SAMPLE; upd(); runScan(); };
 $('btnClear').onclick=function(){ $('inp').value=''; upd(); $('reportCard').classList.add('hide');
-  $('flagCard').classList.add('hide'); $('resBody').classList.add('hide'); $('resEmpty').classList.remove('hide'); };
+  $('flagCard').classList.add('hide'); $('explainCard').classList.add('hide'); $('paragraphCard').classList.add('hide');
+  $('resBody').classList.add('hide'); $('resEmpty').classList.remove('hide'); };
 
 /* ---------- file upload ---------- */
 (function(){
@@ -4072,6 +4235,7 @@ $('btnClear').onclick=function(){ $('inp').value=''; upd(); $('reportCard').clas
       ta.value = text;
       upd();
       $('reportCard').classList.add('hide'); $('flagCard').classList.add('hide');
+      $('explainCard').classList.add('hide'); $('paragraphCard').classList.add('hide');
       $('resBody').classList.add('hide'); $('resEmpty').classList.remove('hide');
       showStatus('Loaded '+wordCount(text)+' words from <b>'+esc(file.name)+'</b>.', 'ok-txt');
       runScan();
@@ -4098,15 +4262,21 @@ $('btnClear').onclick=function(){ $('inp').value=''; upd(); $('reportCard').clas
   });
 })();
 
+var CATEGORY_NOTE = {
+  insufficient: 'There isn’t enough text here for a reliable estimate of any kind — length matters more than any other factor for short documents.',
+  likely_human: 'Statistical and (where available) model-based signals both fall solidly in the human range.',
+  probably_human: 'Signals lean human overall, though a few passages or measures are less clear.',
+  uncertain: 'The evidence is mixed or the signals disagree with each other — this genuinely could go either way.',
+  probably_ai: 'Signals lean AI-typical overall, though not with full confidence.',
+  likely_ai: 'Statistical and model-based signals both sit well above the human range across most of the document.'
+};
+
 function verdictFor(r){
-  var pct = r.pct;
-  var suffix = r.engine==='local' ? '' : ' Heuristic fallback: unreliable, treat as a style hint only.';
-  if(!r.reliable) return ['Too short to judge','Under 200 words. These classifiers collapse toward "AI" on short text — measured: one human passage scored 90% at 70 words and 11% at 134. Treat this as no result, not a low one.'+suffix];
-  if(pct>=80) return ['Very likely AI-generated','Token probabilities sit far above the human range across most segments.'+suffix];
-  if(pct>=55) return ['Likely AI-generated','Most segments score above the decision boundary.'+suffix];
-  if(pct>=30) return ['Mixed / possibly AI-assisted','Some segments read as machine-written, others as human.'+suffix];
-  if(pct>=12) return ['Mostly human','A few segments look predictable, but the bulk reads human.'+suffix];
-  return ['Likely human-written','Token predictability and spread both fall in the human range.'+suffix];
+  var c = r.combined;
+  if(!c) return ['Uncertain','No detailed signal breakdown was available for this result.'];
+  var label = DetectorCore.CATEGORY_LABELS[c.category] || 'Uncertain';
+  var suffix = r.engine==='local' ? '' : ' This ran on the offline statistical fallback (no internet access to the primary transformer models) — treat it as a weaker signal.';
+  return [label, (CATEGORY_NOTE[c.category]||'') + suffix];
 }
 
 var lastResult=null;
@@ -4135,18 +4305,24 @@ async function runScan(){
   renderScan(text, r);
 }
 
+var CATEGORY_PILL_CLASS = { insufficient:'mid', likely_human:'lo', probably_human:'lo', uncertain:'mid', probably_ai:'hi', likely_ai:'hi' };
+var CATEGORY_RING_COLOR = { insufficient:'var(--warn)', likely_human:'var(--hum)', probably_human:'var(--hum)', uncertain:'var(--warn)', probably_ai:'var(--ai)', likely_ai:'var(--ai)' };
+
 function renderScan(text, r){
+  var cat = r.combined ? r.combined.category : (r.pct>=55?'probably_ai':(r.pct>=30?'uncertain':'probably_human'));
+  var confidence = r.combined ? r.combined.confidence : null;
 
   /* gauge */
   var C = 2*Math.PI*53;
   $('ringArc').setAttribute('stroke-dasharray', C.toFixed(1));
   $('ringArc').setAttribute('stroke-dashoffset', (C*(1-r.pct/100)).toFixed(1));
-  $('ringArc').setAttribute('stroke', r.pct>=55?'var(--ai)':(r.pct>=30?'var(--warn)':'var(--hum)'));
+  $('ringArc').setAttribute('stroke', CATEGORY_RING_COLOR[cat] || 'var(--warn)');
   $('pctVal').textContent = r.pct+'%';
   var v = verdictFor(r);
   $('verdict').textContent = v[0];
-  $('verdict').className = 'pill ' + (r.pct>=55 ? 'hi' : (r.pct>=30 ? 'mid' : 'lo'));
+  $('verdict').className = 'pill ' + (CATEGORY_PILL_CLASS[cat] || 'mid');
   $('verdictNote').textContent = v[1];
+  $('confidenceNote').textContent = confidence!==null ? 'Confidence: '+confidence+'%' : '';
 
   $('mPerp').textContent  = Math.round(r.perp*100)+'%';
   $('mBurst').textContent = Math.round(r.burst*100)+'%';
@@ -4226,6 +4402,31 @@ function renderScan(text, r){
     $('flagCard').classList.remove('hide');
   } else {
     $('flagCard').classList.add('hide');
+  }
+
+  /* explainability */
+  var primary = r.primarySignals || [], limits = r.limitations || [];
+  if(primary.length || limits.length){
+    $('primarySignalsList').innerHTML = primary.map(function(s){ return '<li>'+esc(s)+'</li>'; }).join('');
+    $('limitationsList').innerHTML = limits.map(function(s){ return '<li>'+esc(s)+'</li>'; }).join('');
+    $('explainCard').classList.remove('hide');
+  } else {
+    $('explainCard').classList.add('hide');
+  }
+
+  /* paragraph-level mixed-authorship report */
+  var pr = r.paragraphReport || [];
+  if(pr.length > 1){
+    var CAT_LABEL = { low:'Low AI signal', uncertain:'Uncertain', high:'High AI signal' };
+    $('paragraphList').innerHTML = pr.map(function(p){
+      var meta = p.words+' words'+(p.reliable ? '' : ' — too short to score alone')+(p.merged ? ' (grouped with adjacent paragraph)' : '');
+      return '<div class="para-item"><span class="para-badge '+p.category+'">'+CAT_LABEL[p.category]+'</span>'+
+        '<div class="para-body"><div class="p-meta">Paragraph '+p.index+' &middot; '+esc(meta)+'</div>'+
+        '<div class="p-preview">'+esc(p.preview)+(p.preview.length>=90?'…':'')+'</div></div></div>';
+    }).join('');
+    $('paragraphCard').classList.remove('hide');
+  } else {
+    $('paragraphCard').classList.add('hide');
   }
 }
 $('btnScan').onclick = runScan;
