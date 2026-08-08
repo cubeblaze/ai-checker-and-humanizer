@@ -163,6 +163,42 @@ button,input,textarea{font:inherit; color:inherit}
   transition:opacity .16s ease, transform .16s cubic-bezier(.4,0,.2,1), var(--t-theme)}
 .avatar-menu.on .avatar-dropdown{opacity:1; transform:translateY(0) scale(1); pointer-events:auto}
 .avatar-dropdown-lab{font-size:11.5px; color:var(--tx-3); text-align:center; margin-bottom:2px}
+.avatar-dropdown-lab.email{font-weight:700; color:var(--tx-2); word-break:break-all}
+.avatar-btn.signed-in{background:var(--accent); border-color:var(--accent); color:var(--accent-contrast);
+  font-size:13px; font-weight:700}
+.avatar-menu.on .avatar-btn.signed-in{background:var(--accent-hover); border-color:var(--accent-hover); color:var(--accent-contrast)}
+
+/* ---------- auth modal (Log In / Create Account) ---------- */
+.auth-modal-overlay{position:fixed; inset:0; z-index:210; background:rgba(12,16,13,.44);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; pointer-events:none; transition:opacity .18s ease}
+.auth-modal-overlay.on{opacity:1; pointer-events:auto}
+.auth-modal{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r-lg); box-shadow:var(--sh-lg); padding:30px 28px 26px; position:relative;
+  transform:translateY(10px) scale(.98); transition:transform .18s ease, var(--t-theme)}
+.auth-modal-overlay.on .auth-modal{transform:translateY(0) scale(1)}
+.auth-modal-close{position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:999px;
+  border:1px solid var(--line); background:var(--surface-2); color:var(--tx-3); font-size:19px; line-height:1;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.14s}
+.auth-modal-close:hover{color:var(--tx); border-color:var(--line-strong)}
+.auth-modal h2{font-size:20px; margin-bottom:4px}
+.auth-modal-sub{font-size:13px; color:var(--tx-3); margin-bottom:22px}
+.auth-field{display:block; margin-bottom:14px; font-size:12.5px; font-weight:700; color:var(--tx-2)}
+.auth-field span{display:block; margin-bottom:6px}
+.auth-field input{width:100%; background:var(--surface-2); color:var(--tx); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:10px 13px; font-size:14px; font-weight:400; outline:none;
+  transition:border-color .15s, box-shadow .15s, var(--t-theme)}
+.auth-field input:focus{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accent-soft); background:var(--surface)}
+.auth-modal-err{font-size:12.5px; font-weight:600; color:var(--bad); background:color-mix(in srgb, var(--bad) 10%, transparent);
+  border:1px solid color-mix(in srgb, var(--bad) 30%, transparent); border-radius:var(--r-sm);
+  padding:9px 12px; margin-bottom:14px}
+.auth-modal-switch{text-align:center; font-size:13px; color:var(--tx-3); margin-top:16px}
+.auth-modal-switch button{background:none; border:0; color:var(--accent); font-weight:700; cursor:pointer; padding:0 0 0 4px; font-size:13px}
+.auth-modal-switch button:hover{text-decoration:underline}
+.auth-google-btn{justify-content:center; gap:10px; margin-bottom:18px}
+.auth-modal-divider{display:flex; align-items:center; gap:12px; margin:0 0 18px; font-size:11.5px;
+  font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--tx-3)}
+.auth-modal-divider::before, .auth-modal-divider::after{content:""; flex:1; height:1px; background:var(--line)}
 
 /* ---------- theme toggle switch ---------- */
 .theme-switch{appearance:none; border:1px solid var(--line); background:var(--surface-2);
@@ -677,6 +713,50 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
+<script type="module">
+/* ---------- Firebase Auth bridge ----------
+   Loaded straight from Google's CDN as an ES module — no npm/bundler, same
+   "just a script tag" approach as everything else in this file. The rest of
+   the app's code is plain (non-module) <script> tags, so this block's only
+   job is to do the Firebase calls and hand the results to `window.KAuth`,
+   which the main app script (bottom of body) calls into. */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile,
+  GoogleAuthProvider, signInWithPopup
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+
+var firebaseConfig = {
+  apiKey: "AIzaSyD7J8HvG3OCaDkRY57x7KefchNcWLs3xnU",
+  authDomain: "klarity-2af77.firebaseapp.com",
+  projectId: "klarity-2af77",
+  storageBucket: "klarity-2af77.firebasestorage.app",
+  messagingSenderId: "624457599567",
+  appId: "1:624457599567:web:ceb80b99ebda33c2fc383a",
+  measurementId: "G-693ZK8YD9D"
+};
+
+var app = initializeApp(firebaseConfig);
+var auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(function(){ /* private-browsing etc — fall back to session-only */ });
+
+var googleProvider = new GoogleAuthProvider();
+
+window.KAuth = {
+  signUp: function(name, email, pass){
+    return createUserWithEmailAndPassword(auth, email, pass).then(function(cred){
+      if(!name) return cred;
+      return updateProfile(cred.user, { displayName: name }).then(function(){ return cred; });
+    });
+  },
+  signIn: function(email, pass){ return signInWithEmailAndPassword(auth, email, pass); },
+  signInWithGoogle: function(){ return signInWithPopup(auth, googleProvider); },
+  logOut: function(){ return signOut(auth); },
+  onChange: function(cb){ onAuthStateChanged(auth, cb); }
+};
+window.dispatchEvent(new Event('kauth-ready'));
+</script>
 </head>
 <body>
 
@@ -706,12 +786,14 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
     </div>
     <div class="avatar-menu hide" id="avatarMenu">
       <button class="avatar-btn" id="avatarBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <svg id="avatarIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="avatarInitials" class="hide"></span>
       </button>
       <div class="avatar-dropdown" id="avatarDropdown">
-        <p class="avatar-dropdown-lab">Not signed in</p>
+        <p class="avatar-dropdown-lab" id="avatarLabel">Not signed in</p>
         <button class="btn sm wide" id="btnLoginAvatar" type="button">Log In</button>
         <button class="btn primary sm wide" id="btnSignupAvatar" type="button">Create Account</button>
+        <button class="btn sm wide hide" id="btnLogoutAvatar" type="button">Log Out</button>
       </div>
     </div>
     <button class="theme-switch" id="themeBtn" type="button" role="switch" aria-checked="false"
@@ -811,11 +893,14 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
     <h1>Analyze your writing with confidence</h1>
     <p>Detect AI-generated content, improve your writing, and understand your text with advanced analysis tools.</p>
     <div class="hero-actions">
-      <button class="btn primary lg" id="btnGetStarted" data-goto="dashboard" type="button">
+      <button class="btn primary lg" id="btnGetStarted" type="button">
         Get Started
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
-      <button class="btn outline lg" id="btnSeeInside" data-goto="dashboard" type="button">See what's inside</button>
+      <button class="btn primary lg hide" id="btnGoDashboard" data-goto="dashboard" type="button">
+        Go to Dashboard
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
     </div>
   </section>
 
@@ -929,7 +1014,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 
   <div class="dash-header">
     <div>
-      <h1>Dashboard</h1>
+      <h1 id="dashGreeting">Dashboard</h1>
       <p>Everything in the Klarity suite, in one place.</p>
     </div>
   </div>
@@ -1732,6 +1817,44 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div class="auth-modal-overlay" id="authModalOverlay" role="presentation">
+  <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <button class="auth-modal-close" id="authModalClose" type="button" aria-label="Close">&times;</button>
+    <h2 id="authModalTitle">Log in</h2>
+    <p class="auth-modal-sub" id="authModalSub">Welcome back to Klarity.</p>
+    <button class="btn wide auth-google-btn" id="authGoogleBtn" type="button">
+      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4c-7.6 0-14.1 4.3-17.4 10.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.3 0 10.2-2 13.9-5.3l-6.4-5.4C29.5 34.8 26.9 36 24 36c-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.8 39.6 16.4 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.4 5.4C40.8 36.5 44 30.8 44 24c0-1.2-.1-2.4-.4-3.5z"/>
+      </svg>
+      Continue with Google
+    </button>
+    <div class="auth-modal-divider"><span>or</span></div>
+    <form id="authForm" novalidate>
+      <label class="auth-field hide" id="authNameWrap">
+        <span>Name</span>
+        <input type="text" id="authName" autocomplete="name" placeholder="Jane Doe">
+      </label>
+      <label class="auth-field">
+        <span>Email</span>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="you@example.com" required>
+      </label>
+      <label class="auth-field">
+        <span>Password</span>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="••••••••" required minlength="6">
+      </label>
+      <p class="auth-modal-err hide" id="authErr"></p>
+      <button class="btn primary wide" id="authSubmit" type="submit">Log in</button>
+    </form>
+    <p class="auth-modal-switch">
+      <span id="authSwitchLead">Don&rsquo;t have an account?</span>
+      <button type="button" id="authSwitchBtn">Sign up</button>
+    </p>
+  </div>
+</div>
 
 <script src="detector-core.js"></script>
 <script>
@@ -5075,8 +5198,10 @@ var NO_ENGINEBAR_PANES = {home:1, dashboard:1, projects:1, writing:1, rubric:1, 
    instead of leaving the app on the first press. Both fall out for free once
    "which pane is showing" and "what's in the URL" are the same fact — the
    hash change is what triggers the render, not the click handler directly. */
+var CURRENT_PANE = 'home';
 function renderPane(which){
   if(!PANES[which]) which='home';
+  CURRENT_PANE = which;
   for(var k in PANES){
     var on = (k===which);
     $(PANES[k].pane).classList.toggle('hide', !on);
@@ -5094,10 +5219,10 @@ function renderPane(which){
   $('mainWrap').classList.toggle('hide', which==='home');
   // Log In / Create Account read as marketing CTAs on the landing page;
   // everywhere past it, that's just "the app", so swap them for a single
-  // account avatar (its dropdown holds the same two actions).
-  $('authActions').classList.toggle('hide', which!=='home');
-  $('avatarMenu').classList.toggle('hide', which==='home');
-  $('avatarMenu').classList.remove('on');
+  // account avatar (its dropdown holds the same two actions) — unless the
+  // user is actually signed in, in which case the avatar shows everywhere,
+  // Home included (see updateAuthNav).
+  updateAuthNav();
   window.scrollTo(0,0);
 }
 function showTab(which){
@@ -5185,11 +5310,6 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function(
   dropdown.addEventListener('click', function(e){ e.stopPropagation(); });
 })();
 
-/* ---------- placeholder auth actions ----------
-   No account system exists yet. These buttons are visual only: they show a
-   toast instead of performing any real sign-in/sign-up. Wired up wherever
-   "Log In" / "Create Account" appears — the navbar (Home only) and the
-   avatar dropdown (every other pane). */
 function showToast(msg){
   var t = $('toast');
   t.textContent = msg;
@@ -5197,22 +5317,180 @@ function showToast(msg){
   clearTimeout(showToast._t);
   showToast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
 }
-[$('btnLoginNav'), $('btnLoginAvatar')].forEach(function(btn){
-  btn.onclick = function(){
-    // TODO: Connect to authentication system — open the login flow here once
-    // accounts exist (e.g. redirect to /login or open an auth modal).
-    showToast('Log in isn’t available yet — accounts are coming soon.');
+
+/* ---------- account system (Firebase Auth) ----------
+   window.KAuth is set up by the module script in <head>. Modules load
+   asynchronously, so it may not exist yet the instant this script runs —
+   everything below tolerates that (buttons just toast "still connecting"
+   for the first moment on a cold page load) and picks up the real thing
+   via the 'kauth-ready' event or once KAuth.onChange fires the first time. */
+var CURRENT_USER = null;
+function initialsFor(user){
+  var src = (user.displayName || user.email || '?').trim();
+  var parts = src.split(/\s+/);
+  var s = parts.length > 1 ? (parts[0][0] + parts[1][0]) : src.slice(0, 2);
+  return s.toUpperCase();
+}
+function firstNameFor(user){
+  if(user.displayName) return user.displayName.trim().split(/\s+/)[0];
+  if(user.email) return user.email.split('@')[0];
+  return 'there';
+}
+function updateAuthNav(){
+  var loggedIn = !!CURRENT_USER;
+  var onHome = CURRENT_PANE === 'home';
+  // Log In / Create Account read as marketing CTAs on the landing page;
+  // everywhere past it, that's just "the app", so swap them for a single
+  // account avatar. Once actually signed in, the avatar takes over
+  // everywhere — Home included — and the CTAs never show again.
+  $('authActions').classList.toggle('hide', loggedIn || !onHome);
+  $('avatarMenu').classList.toggle('hide', !loggedIn && onHome);
+  if(!loggedIn) $('avatarMenu').classList.remove('on');
+  $('avatarLabel').textContent = loggedIn ? (CURRENT_USER.displayName || CURRENT_USER.email) : 'Not signed in';
+  $('avatarLabel').classList.toggle('email', loggedIn);
+  $('btnLoginAvatar').classList.toggle('hide', loggedIn);
+  $('btnSignupAvatar').classList.toggle('hide', loggedIn);
+  $('btnLogoutAvatar').classList.toggle('hide', !loggedIn);
+  $('avatarBtn').classList.toggle('signed-in', loggedIn);
+  $('avatarIcon').classList.toggle('hide', loggedIn);
+  $('avatarInitials').classList.toggle('hide', !loggedIn);
+  // Home's hero CTA: "Get Started" (opens signup) before an account exists,
+  // "Go to Dashboard" once signed in — never both.
+  $('btnGetStarted').classList.toggle('hide', loggedIn);
+  $('btnGoDashboard').classList.toggle('hide', !loggedIn);
+  // Dashboard greets signed-in users by name instead of the generic title.
+  $('dashGreeting').textContent = loggedIn ? ('Welcome back, ' + firstNameFor(CURRENT_USER)) : 'Dashboard';
+  if(loggedIn) $('avatarInitials').textContent = initialsFor(CURRENT_USER);
+}
+function handleAuthChange(user){
+  CURRENT_USER = user;
+  updateAuthNav();
+}
+if(window.KAuth) window.KAuth.onChange(handleAuthChange);
+else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(handleAuthChange); }, { once:true });
+
+/* ---------- auth modal (Log In / Create Account) ---------- */
+(function(){
+  var overlay = $('authModalOverlay'), form = $('authForm');
+  var nameWrap = $('authNameWrap'), nameInput = $('authName');
+  var emailInput = $('authEmail'), passInput = $('authPassword');
+  var errBox = $('authErr'), submitBtn = $('authSubmit');
+  var title = $('authModalTitle'), sub = $('authModalSub');
+  var switchLead = $('authSwitchLead'), switchBtn = $('authSwitchBtn');
+  var mode = 'login';
+
+  function setMode(m){
+    mode = m;
+    clearErr();
+    if(m === 'signup'){
+      title.textContent = 'Create account';
+      sub.textContent = 'Start your free Klarity account.';
+      nameWrap.classList.remove('hide');
+      passInput.setAttribute('autocomplete', 'new-password');
+      submitBtn.textContent = 'Create account';
+      switchLead.textContent = 'Already have an account?';
+      switchBtn.textContent = 'Log in';
+    } else {
+      title.textContent = 'Log in';
+      sub.textContent = 'Welcome back to Klarity.';
+      nameWrap.classList.add('hide');
+      passInput.setAttribute('autocomplete', 'current-password');
+      submitBtn.textContent = 'Log in';
+      switchLead.textContent = 'Don’t have an account?';
+      switchBtn.textContent = 'Sign up';
+    }
+  }
+  function clearErr(){ errBox.classList.add('hide'); errBox.textContent = ''; }
+  function showErr(msg){ errBox.textContent = msg; errBox.classList.remove('hide'); }
+  function openModal(m){
+    if(!window.KAuth){
+      showToast('Still connecting to the account system — try again in a second.');
+      return;
+    }
+    setMode(m);
+    form.reset();
+    overlay.classList.add('on');
     $('avatarMenu').classList.remove('on');
+    setTimeout(function(){ emailInput.focus(); }, 50);
+  }
+  function closeModal(){
+    overlay.classList.remove('on');
+    submitBtn.disabled = false;
+  }
+  $('authModalClose').onclick = closeModal;
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && overlay.classList.contains('on')) closeModal();
+  });
+  switchBtn.onclick = function(){ setMode(mode === 'login' ? 'signup' : 'login'); };
+
+  var ERR_MSGS = {
+    'auth/invalid-email': 'That email address doesn’t look right.',
+    'auth/user-not-found': 'No account found with that email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/email-already-in-use': 'An account with that email already exists — try logging in instead.',
+    'auth/weak-password': 'Password should be at least 6 characters.',
+    'auth/too-many-requests': 'Too many attempts — please wait a moment and try again.',
+    'auth/network-request-failed': 'Network error — check your connection and try again.',
+    'auth/operation-not-allowed': 'Email/password sign-in isn’t turned on for this project yet.',
+    'auth/configuration-not-found': 'Email/password sign-in isn’t turned on for this project yet.',
+    'auth/popup-closed-by-user': 'Google sign-in was closed before finishing.',
+    'auth/popup-blocked': 'Your browser blocked the Google sign-in popup — allow popups and try again.',
+    'auth/account-exists-with-different-credential': 'An account already exists for that email using a different sign-in method.'
   };
-});
-[$('btnSignupNav'), $('btnSignupAvatar')].forEach(function(btn){
-  btn.onclick = function(){
-    // TODO: Connect to authentication system — open the sign-up flow here
-    // once accounts exist (e.g. redirect to /signup or open an auth modal).
-    showToast('Account creation isn’t available yet — check back soon.');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    clearErr();
+    var email = emailInput.value.trim(), pass = passInput.value;
+    if(!email || !pass){ showErr('Please fill in every field.'); return; }
+    if(mode === 'signup' && pass.length < 6){ showErr('Password should be at least 6 characters.'); return; }
+    submitBtn.disabled = true;
+    var name = nameInput.value.trim();
+    var task = mode === 'signup' ? window.KAuth.signUp(name, email, pass) : window.KAuth.signIn(email, pass);
+    task.then(function(cred){
+      submitBtn.disabled = false;
+      closeModal();
+      // Firebase's auth-state listener doesn't refire after updateProfile()
+      // sets the display name on signup, so the avatar/dashboard greeting
+      // would otherwise be stuck showing the email until the next reload —
+      // push the freshly-named user in directly instead of waiting for it.
+      if(cred && cred.user){ CURRENT_USER = cred.user; updateAuthNav(); }
+      showToast(mode === 'signup' ? 'Account created — welcome to Klarity!' : 'Welcome back!');
+    }).catch(function(err){
+      submitBtn.disabled = false;
+      showErr(ERR_MSGS[err && err.code] || 'Something went wrong — please try again.');
+    });
+  });
+
+  $('authGoogleBtn').onclick = function(){
+    if(!window.KAuth) return;
+    clearErr();
+    var btn = $('authGoogleBtn');
+    btn.disabled = true;
+    window.KAuth.signInWithGoogle().then(function(cred){
+      btn.disabled = false;
+      closeModal();
+      if(cred && cred.user){ CURRENT_USER = cred.user; updateAuthNav(); }
+      showToast('Welcome to Klarity!');
+    }).catch(function(err){
+      btn.disabled = false;
+      if(err && err.code === 'auth/popup-closed-by-user') return; // user backed out — not an error worth surfacing
+      showErr(ERR_MSGS[err && err.code] || 'Something went wrong — please try again.');
+    });
+  };
+
+  [$('btnLoginNav'), $('btnLoginAvatar')].forEach(function(btn){
+    btn.onclick = function(){ openModal('login'); };
+  });
+  [$('btnSignupNav'), $('btnSignupAvatar'), $('btnGetStarted')].forEach(function(btn){
+    btn.onclick = function(){ openModal('signup'); };
+  });
+  $('btnLogoutAvatar').onclick = function(){
     $('avatarMenu').classList.remove('on');
+    if(window.KAuth) window.KAuth.logOut().then(function(){ showToast('Logged out.'); });
   };
-});
+})();
 
 /* ---- model status ---- */
 function refreshEngine(){
