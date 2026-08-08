@@ -124,16 +124,20 @@ async function handleGenerate(request, env, headers) {
   const rawText = await resp.text();
   let data;
   try { data = JSON.parse(rawText); } catch { data = null; }
+  // Google sometimes wraps error bodies in an array (`[{error:{...}}]`)
+  // instead of a bare object — unwrap it so `.error` lookups below work
+  // for both shapes.
+  const errBody = Array.isArray(data) ? data[0] : data;
   if (!resp.ok) {
-    const reason = data?.error?.details?.find((d) => d.reason)?.reason || null;
+    const reason = errBody?.error?.details?.find((d) => d.reason)?.reason || null;
     console.error('generate: upstream error', {
       endpoint: GEMINI_URL,
       model: GEMINI_MODEL,
       httpStatus: resp.status,
-      googleErrorStatus: data?.error?.status || null,
+      googleErrorStatus: errBody?.error?.status || null,
       googleErrorReason: reason,
     });
-    const msg = data?.error?.message || `Upstream error (${resp.status})`;
+    const msg = errBody?.error?.message || `Upstream error (${resp.status})`;
     return json({ error: msg }, resp.status >= 400 && resp.status < 600 ? resp.status : 502, headers);
   }
 
@@ -178,7 +182,8 @@ async function generateSpeech(env, text, voiceId) {
   let data;
   try { data = JSON.parse(rawText); } catch { data = null; }
   if (!resp.ok) {
-    const msg = data?.error?.message || rawText.slice(0, 400) || `Upstream error (${resp.status})`;
+    const errBody = Array.isArray(data) ? data[0] : data;
+    const msg = errBody?.error?.message || rawText.slice(0, 400) || `Upstream error (${resp.status})`;
     throw new Error(msg);
   }
   return { data, rawText };
