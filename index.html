@@ -390,14 +390,19 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
   flex-wrap:wrap; margin-bottom:20px}
 .dash-section-hd-row .dash-section-hd{margin-bottom:0}
 
-/* project slots — illustrative, not real yet: dashed like the "coming
-   soon" cards, using the same tool-grid layout so the teaser and the
-   full Your Projects page line up visually with everything else. */
-.project-slot{border-style:dashed; cursor:default}
-.project-slot h3{font-size:14px; color:var(--tx-2); margin-bottom:2px}
-.project-slot p{font-size:12.25px; color:var(--tx-3); line-height:1.55; flex:1}
-.project-slot .f-icon{background:var(--surface-2); color:var(--tx-3)}
-.project-slot .badge-soon{align-self:flex-start}
+/* project list — one box, a row per project (or per placeholder slot,
+   until there's a real one). Dashed to read as "not real yet", same cue
+   as the "coming soon" cards. */
+.project-list{background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg);
+  overflow:hidden; transition:var(--t-theme)}
+.project-row{display:flex; align-items:center; gap:16px; padding:18px 22px; border-bottom:1px solid var(--line)}
+.project-row:last-child{border-bottom:0}
+.project-row .f-icon{background:var(--surface-2); color:var(--tx-3); flex:0 0 auto}
+.project-row-body{flex:1; min-width:0; min-height:20px}
+.project-row .btn{flex:0 0 auto}
+@media (max-width:560px){
+  .project-row{flex-wrap:wrap}
+}
 
 /* scroll reveal — Home's sections fade/slide in as they cross into view.
    Each .reveal element starts hidden; JS adds .in via IntersectionObserver
@@ -937,24 +942,21 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
       </div>
       <button class="btn" data-goto="projects" type="button">View all</button>
     </div>
-    <div class="tool-grid">
-      <div class="card project-slot">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
-        <h3>Detector reports</h3>
-        <p>Documents you scan will be saved here.</p>
-        <span class="badge-soon">Coming Soon</span>
+    <div class="project-list">
+      <div class="project-row">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+        <div class="project-row-body"></div>
+        <button class="btn sm" type="button" disabled>Open</button>
       </div>
-      <div class="card project-slot">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
-        <h3>Humanized drafts</h3>
-        <p>Rewrites you run will be kept here.</p>
-        <span class="badge-soon">Coming Soon</span>
+      <div class="project-row">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+        <div class="project-row-body"></div>
+        <button class="btn sm" type="button" disabled>Open</button>
       </div>
-      <div class="card project-slot">
-        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
-        <h3>Study sets</h3>
-        <p>Flashcards and quizzes you generate will be collected here.</p>
-        <span class="badge-soon">Coming Soon</span>
+      <div class="project-row">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+        <div class="project-row-body"></div>
+        <button class="btn sm" type="button" disabled>Open</button>
       </div>
     </div>
   </section>
@@ -1687,24 +1689,21 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
       <p>Every scan, rewrite and study set you save will live here.</p>
     </div>
   </div>
-  <div class="tool-grid">
-    <div class="card project-slot">
-      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
-      <h3>Detector reports</h3>
-      <p>Documents you scan will be saved here so you can revisit the breakdown later.</p>
-      <span class="badge-soon">Coming Soon</span>
+  <div class="project-list">
+    <div class="project-row">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+      <div class="project-row-body"></div>
+      <button class="btn sm" type="button" disabled>Open</button>
     </div>
-    <div class="card project-slot">
-      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
-      <h3>Humanized drafts</h3>
-      <p>Rewrites you run will be kept here, before and after, for easy comparison.</p>
-      <span class="badge-soon">Coming Soon</span>
+    <div class="project-row">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+      <div class="project-row-body"></div>
+      <button class="btn sm" type="button" disabled>Open</button>
     </div>
-    <div class="card project-slot">
-      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
-      <h3>Study sets</h3>
-      <p>Flashcards, quizzes and guides you generate will be collected here.</p>
-      <span class="badge-soon">Coming Soon</span>
+    <div class="project-row">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+      <div class="project-row-body"></div>
+      <button class="btn sm" type="button" disabled>Open</button>
     </div>
   </div>
   <div class="note" style="margin-top:24px">
