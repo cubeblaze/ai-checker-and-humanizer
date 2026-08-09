@@ -1475,7 +1475,7 @@ window.dispatchEvent(new Event('kauth-ready'));
     <div id="pcScriptStatus" class="mini" style="margin-bottom:10px"></div>
     <div id="pcScriptList"></div>
     <div class="row" style="justify-content:center; margin:22px 0 30px">
-      <button class="btn primary wide" id="btnPcGenerateAudio" type="button" style="max-width:360px">Generate Audio &rarr;</button>
+      <button class="btn primary wide" id="btnPcGenerateAudio" type="button" style="max-width:360px">Start Podcast &rarr;</button>
     </div>
   </div>
 
@@ -1493,17 +1493,16 @@ window.dispatchEvent(new Event('kauth-ready'));
           </div>
         </div>
 
-        <audio id="pcAudio" style="display:none"></audio>
         <div class="pc-controls">
           <div class="pc-seek-row">
             <span class="mini" id="pcTimeCur">0:00</span>
-            <input type="range" id="pcSeek" min="0" max="1000" value="0" step="1">
-            <span class="mini" id="pcTimeTotal">0:00</span>
+            <input type="range" id="pcSeek" min="0" max="1000" value="0" step="1" title="Approximate — jumps to the nearest line">
+            <span class="mini" id="pcTimeTotal">~0:00</span>
           </div>
           <div class="row" style="justify-content:center; gap:14px; margin-top:8px">
-            <button class="btn sm" id="btnPcSkipBack" type="button" title="Back 10s">&#9664;&#9664; 10s</button>
+            <button class="btn sm" id="btnPcSkipBack" type="button" title="Previous line">&#9664;&#9664; Line</button>
             <button class="btn primary" id="btnPcPlayPause" type="button" style="min-width:90px">&#9654; Play</button>
-            <button class="btn sm" id="btnPcSkipFwd" type="button" title="Forward 10s">10s &#9654;&#9654;</button>
+            <button class="btn sm" id="btnPcSkipFwd" type="button" title="Next line">Line &#9654;&#9654;</button>
           </div>
           <div class="row" style="justify-content:space-between; margin-top:10px; flex-wrap:wrap; gap:10px">
             <div class="row" style="gap:6px" id="pcSpeedRow">
@@ -4540,112 +4539,44 @@ studyRenderSavedList();
 // the picker below is name-only and each name reliably sounds like that
 // gender, with a deliberately varied style per person (deep, upbeat, calm,
 // warm, etc.) rather than every voice in a gender sounding the same.
-var PODCAST_PERSONAS = [
-  {name:'Emma',   gender:'female', voice:'Kore',        style:'Firm, confident'},
-  {name:'Sophie', gender:'female', voice:'Leda',         style:'Youthful, energetic'},
-  {name:'Zoe',    gender:'female', voice:'Laomedeia',    style:'Upbeat, cheerful'},
-  {name:'Maya',   gender:'female', voice:'Aoede',        style:'Relaxed, breezy'},
-  {name:'Grace',  gender:'female', voice:'Sulafat',      style:'Warm, approachable'},
-  {name:'Olivia', gender:'female', voice:'Gacrux',       style:'Deep, mature'},
-  {name:'Chloe',  gender:'female', voice:'Autonoe',      style:'Bright, cheerful'},
-  {name:'Ava',    gender:'female', voice:'Vindemiatrix', style:'Gentle, soft-spoken'},
-  {name:'Jake',   gender:'male',   voice:'Puck',         style:'Upbeat, happy'},
-  {name:'Noah',   gender:'male',   voice:'Charon',       style:'Calm, informative'},
-  {name:'Ethan',  gender:'male',   voice:'Fenrir',       style:'Excitable, passionate'},
-  {name:'Marcus', gender:'male',   voice:'Algenib',      style:'Deep, gravelly'},
-  {name:'Leo',    gender:'male',   voice:'Orus',         style:'Calm, firm'},
-  {name:'Dylan',  gender:'male',   voice:'Zubenelgenubi',style:'Casual, relaxed'},
-  {name:'Aiden',  gender:'male',   voice:'Schedar',      style:'Even, steady'},
-  {name:'Ryan',   gender:'male',   voice:'Umbriel',      style:'Easy-going, relaxed'}
-];
-
-/* ---- PCM / WAV helpers (no server-side audio processing available, so
-   concatenation and containerization both happen client-side) ---- */
-function pcBase64ToBytes(b64){
-  var bin = atob(b64), bytes = new Uint8Array(bin.length);
-  for(var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+// Voices come from the browser's own built-in speech engine (Web Speech API,
+// SpeechSynthesis) — zero network calls, zero API key, zero cost, and no
+// external quota to ever run into. The tradeoff: available voices vary by
+// device/OS/browser, and there's no documented gender/style metadata, so
+// gender is a best-effort guess from the voice's own name and grouped as
+// "Girls" / "Boys" / "Other voices" rather than a curated, guaranteed list.
+var PC_FEMALE_VOICE_HINTS = /\b(female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|kate|serena|zira|susan|allison|ava|joanna|salli|kimberly|kendra|amy|emma|nicole|olivia|heather|catherine|linda|hazel|shelley|veena|lekha|mei-jia|sin-ji|yuna|xiaoxiao)\b/i;
+var PC_MALE_VOICE_HINTS = /\b(male|man|boy|daniel|alex|fred|arthur|david|james|oliver|thomas|george|ryan|justin|kevin|eric|brian|russell|gordon|lee|rishi|aaron)\b/i;
+var pcVoicesCache = [];
+function pcGuessGender(name){
+  if(PC_FEMALE_VOICE_HINTS.test(name)) return 'female';
+  if(PC_MALE_VOICE_HINTS.test(name)) return 'male';
+  return 'other';
 }
-function pcConcatBytes(arrays){
-  var total = arrays.reduce(function(s,a){ return s+a.length; }, 0);
-  var out = new Uint8Array(total), off = 0;
-  arrays.forEach(function(a){ out.set(a, off); off += a.length; });
-  return out;
+function pcLoadVoices(){
+  return new Promise(function(resolve){
+    function grab(){ return (window.speechSynthesis ? speechSynthesis.getVoices() : []) || []; }
+    var v = grab();
+    if(v.length){ pcVoicesCache = v; resolve(v); return; }
+    if(!window.speechSynthesis){ resolve([]); return; }
+    var settled = false;
+    speechSynthesis.onvoiceschanged = function(){
+      if(settled) return; settled = true;
+      pcVoicesCache = grab(); resolve(pcVoicesCache);
+    };
+    setTimeout(function(){
+      if(settled) return; settled = true;
+      pcVoicesCache = grab(); resolve(pcVoicesCache);
+    }, 1000);
+  });
 }
-function pcSilenceBytes(seconds, sampleRate, channels){
-  var n = Math.round(seconds*sampleRate*channels*2); // 16-bit = 2 bytes/sample
-  return new Uint8Array(n); // zero-filled = silence
-}
-function pcMakeWavBlob(pcmBytes, sampleRate, channels){
-  var byteRate = sampleRate*channels*2, blockAlign = channels*2, dataSize = pcmBytes.length;
-  var buf = new ArrayBuffer(44), dv = new DataView(buf);
-  function wStr(off,s){ for(var i=0;i<s.length;i++) dv.setUint8(off+i, s.charCodeAt(i)); }
-  wStr(0,'RIFF'); dv.setUint32(4, 36+dataSize, true); wStr(8,'WAVE');
-  wStr(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,channels,true);
-  dv.setUint32(24,sampleRate,true); dv.setUint32(28,byteRate,true); dv.setUint16(32,blockAlign,true); dv.setUint16(34,16,true);
-  wStr(36,'data'); dv.setUint32(40,dataSize,true);
-  return new Blob([buf, pcmBytes], {type:'audio/wav'});
-}
-function pcBytesDurationSec(byteLength, sampleRate, channels){
-  return byteLength/(sampleRate*channels*2);
+function pcEnglishVoices(){
+  var v = pcVoicesCache.filter(function(x){ return /^en/i.test(x.lang); });
+  return v.length ? v : pcVoicesCache; // fall back to whatever exists if no English voice is installed
 }
 
-/* ---- backend TTS call ---- */
-async function callBackendTts(text, voice){
-  if(!backendConfigured()) throw new Error('This feature needs a one-time backend setup by the site owner. See DEPLOY.md.');
-  var resp;
-  try{
-    resp = await fetch(BACKEND_URL.replace(/\/$/,'') + '/api/tts', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({text:text, voice:voice})
-    });
-  }catch(e){ throw new Error('Could not reach the AI backend. Check your internet connection and try again.'); }
-  var data; try{ data = await resp.json(); }catch(e){ throw new Error('The backend returned an unexpected response.'); }
-  if(!resp.ok || data.error){
-    var err = new Error(data.error || ('Backend error (status '+resp.status+').'));
-    err.status = resp.status;
-    throw err;
-  }
-  return data; // {audioBase64, sampleRate, channels, mimeType}
-}
-
-// The TTS model's free tier is capped at 10 requests/minute — a normal
-// multi-minute podcast has far more turns than that, so hitting the limit
-// mid-generation is the expected case, not an edge case. Two defenses:
-// pace calls to stay under the limit in the first place, and if a 429
-// slips through anyway, parse Google's own "retry in Xs" hint and wait
-// that long instead of aborting the whole podcast.
-var PC_TTS_MIN_GAP_MS = 6500; // ~9/min, just under the 10/min free-tier cap
-var pcLastTtsAt = 0;
-async function pcThrottleTts(){
-  var wait = pcLastTtsAt + PC_TTS_MIN_GAP_MS - Date.now();
-  if(wait > 0) await new Promise(function(res){ setTimeout(res, wait); });
-  pcLastTtsAt = Date.now();
-}
-function pcIsRateLimit(e){
-  return e.status===429 || /quota|rate limit/i.test(e.message||'');
-}
-async function pcTtsWithRetry(text, voice, onWait){
-  var maxRetries = 6;
-  for(var attempt=0; attempt<=maxRetries; attempt++){
-    await pcThrottleTts();
-    try{
-      return await callBackendTts(text, voice);
-    }catch(e){
-      if(pcIsRateLimit(e) && attempt<maxRetries){
-        var m = /retry in ([\d.]+)\s*s/i.exec(e.message||'');
-        var waitSec = m ? Math.ceil(parseFloat(m[1])) + 2 : 20;
-        if(onWait) onWait(waitSec, attempt+1);
-        await new Promise(function(res){ setTimeout(res, waitSec*1000); });
-        pcLastTtsAt = Date.now();
-        continue;
-      }
-      throw e;
-    }
-  }
-}
-
-/* ---- IndexedDB library ---- */
+/* ---- IndexedDB library (script + settings only — Web Speech can't hand
+   back an audio file, so saved podcasts are re-synthesized live on open) ---- */
 var PC_DB_NAME = 'klarity.podcasts', PC_DB_VERSION = 1;
 function pcOpenDB(){
   return new Promise(function(resolve,reject){
@@ -4653,18 +4584,16 @@ function pcOpenDB(){
     req.onupgradeneeded = function(){
       var db = req.result;
       if(!db.objectStoreNames.contains('podcasts')) db.createObjectStore('podcasts', {keyPath:'id'});
-      if(!db.objectStoreNames.contains('audio')) db.createObjectStore('audio', {keyPath:'id'});
     };
     req.onsuccess = function(){ resolve(req.result); };
     req.onerror = function(){ reject(req.error); };
   });
 }
-async function pcSavePodcast(meta, audioBlob){
+async function pcSavePodcast(meta){
   var db = await pcOpenDB();
   return new Promise(function(resolve,reject){
-    var tx = db.transaction(['podcasts','audio'],'readwrite');
+    var tx = db.transaction(['podcasts'],'readwrite');
     tx.objectStore('podcasts').put(meta);
-    tx.objectStore('audio').put({id:meta.id, blob:audioBlob});
     tx.oncomplete = function(){ resolve(); };
     tx.onerror = function(){ reject(tx.error); };
   });
@@ -4677,20 +4606,11 @@ async function pcGetAllPodcasts(){
     req.onerror = function(){ reject(req.error); };
   });
 }
-async function pcGetAudio(id){
-  var db = await pcOpenDB();
-  return new Promise(function(resolve,reject){
-    var req = db.transaction('audio','readonly').objectStore('audio').get(id);
-    req.onsuccess = function(){ resolve(req.result ? req.result.blob : null); };
-    req.onerror = function(){ reject(req.error); };
-  });
-}
 async function pcDeletePodcast(id){
   var db = await pcOpenDB();
   return new Promise(function(resolve,reject){
-    var tx = db.transaction(['podcasts','audio'],'readwrite');
+    var tx = db.transaction(['podcasts'],'readwrite');
     tx.objectStore('podcasts').delete(id);
-    tx.objectStore('audio').delete(id);
     tx.oncomplete = function(){ resolve(); };
     tx.onerror = function(){ reject(tx.error); };
   });
@@ -4731,9 +4651,9 @@ var pcState = null;
 function pcNewState(){
   return {
     id: null, notes:'', settings:{length:'standard', customMinutes:10, difficulty:'standard', style:'friendly', fillGaps:false},
-    speaker1:{name:'Maya', voice:'Aoede'}, speaker2:{name:'Jake', voice:'Puck'},
+    speaker1:{name:'', voiceURI:''}, speaker2:{name:'', voiceURI:''},
     title:'', subject:'', turns:[], keyTakeaways:[],
-    audioBlob:null, audioUrl:null, createdAt:null
+    createdAt:null
   };
 }
 
@@ -4744,59 +4664,77 @@ function pcShowView(name){
   window.scrollTo(0,0);
 }
 
-/* ---- persona (name+voice, picked together) select population ---- */
-function pcPopulatePersonaSelect(sel, chosenName){
-  var girls = PODCAST_PERSONAS.filter(function(p){ return p.gender==='female'; });
-  var boys = PODCAST_PERSONAS.filter(function(p){ return p.gender==='male'; });
+/* ---- voice select population (system voices, grouped by best-guess gender) ---- */
+function pcVoiceLabel(v){
+  return v.name.replace(/^(Google|Microsoft)\s+/i,''); // trim the noisy OS/browser prefix, keep the actual voice name
+}
+function pcPopulateVoiceSelect(sel, chosenURI){
+  var voices = pcEnglishVoices();
+  var girls = voices.filter(function(v){ return pcGuessGender(v.name)==='female'; });
+  var boys = voices.filter(function(v){ return pcGuessGender(v.name)==='male'; });
+  var other = voices.filter(function(v){ return pcGuessGender(v.name)==='other'; });
   function opts(list){
-    return list.map(function(p){
-      return '<option value="'+p.name+'"'+(p.name===chosenName?' selected':'')+'>'+p.name+' — '+p.style+'</option>';
+    return list.map(function(v){
+      return '<option value="'+esc(v.voiceURI)+'"'+(v.voiceURI===chosenURI?' selected':'')+'>'+esc(pcVoiceLabel(v))+'</option>';
     }).join('');
   }
-  sel.innerHTML = '<optgroup label="Girls">'+opts(girls)+'</optgroup>'+'<optgroup label="Boys">'+opts(boys)+'</optgroup>';
+  var html = '';
+  if(girls.length) html += '<optgroup label="Girls">'+opts(girls)+'</optgroup>';
+  if(boys.length) html += '<optgroup label="Boys">'+opts(boys)+'</optgroup>';
+  if(other.length) html += '<optgroup label="Other voices">'+opts(other)+'</optgroup>';
+  sel.innerHTML = html || '<option value="">No voices found on this device/browser</option>';
 }
-function pcPersonaFor(n){
+function pcVoiceObjFor(n){
   var speaker = n===1 ? pcState.speaker1 : pcState.speaker2;
-  return PODCAST_PERSONAS.find(function(p){ return p.name===speaker.name; }) || PODCAST_PERSONAS[0];
+  var voices = pcEnglishVoices();
+  return voices.find(function(v){ return v.voiceURI===speaker.voiceURI; }) || voices[0] || null;
 }
-function pcInitVoiceUI(){
-  pcPopulatePersonaSelect($('pcVoice1'), pcState.speaker1.name);
-  pcPopulatePersonaSelect($('pcVoice2'), pcState.speaker2.name);
+async function pcInitVoiceUI(){
+  await pcLoadVoices();
+  var voices = pcEnglishVoices();
+  if(voices.length){
+    var girls = voices.filter(function(v){ return pcGuessGender(v.name)==='female'; });
+    var boys = voices.filter(function(v){ return pcGuessGender(v.name)==='male'; });
+    if(!pcState.speaker1.voiceURI){
+      var v1 = girls[0] || voices[0];
+      pcState.speaker1.voiceURI = v1.voiceURI; pcState.speaker1.name = pcVoiceLabel(v1);
+    }
+    if(!pcState.speaker2.voiceURI){
+      var v2 = boys[0] || voices[1] || voices[0];
+      pcState.speaker2.voiceURI = v2.voiceURI; pcState.speaker2.name = pcVoiceLabel(v2);
+    }
+  }
+  pcPopulateVoiceSelect($('pcVoice1'), pcState.speaker1.voiceURI);
+  pcPopulateVoiceSelect($('pcVoice2'), pcState.speaker2.voiceURI);
   pcUpdateVoiceDesc(1); pcUpdateVoiceDesc(2);
 }
-function pcApplyPersonaChoice(n){
-  var chosenName = $('pcVoice'+n).value;
-  var p = PODCAST_PERSONAS.find(function(x){ return x.name===chosenName; });
-  if(!p) return;
+function pcApplyVoiceChoice(n){
+  var uri = $('pcVoice'+n).value;
+  var v = pcEnglishVoices().find(function(x){ return x.voiceURI===uri; });
+  if(!v) return;
   var speaker = n===1 ? pcState.speaker1 : pcState.speaker2;
-  speaker.name = p.name; speaker.voice = p.voice;
+  speaker.voiceURI = v.voiceURI; speaker.name = pcVoiceLabel(v);
   pcUpdateVoiceDesc(n);
 }
 function pcUpdateVoiceDesc(n){
-  var p = pcPersonaFor(n);
-  $('pcVoiceDesc'+n).textContent = p ? ('Style: '+p.style) : '';
+  var v = pcVoiceObjFor(n);
+  $('pcVoiceDesc'+n).textContent = v ? ('Your device\'s voice — '+v.lang) : 'No voice available';
 }
 
-var pcPreviewAudio = null;
+var pcPreviewUtterance = null;
 async function pcPreviewVoice(n){
   var btn = $('btnPcPreview'+n);
+  if(!window.speechSynthesis){ showToast('Your browser does not support built-in speech.'); return; }
+  var v = pcVoiceObjFor(n);
+  if(!v){ showToast('No voice available to preview.'); return; }
+  speechSynthesis.cancel();
   var was = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
-  try{
-    var p = pcPersonaFor(n);
-    var voice = p.voice, name = p.name;
-    var sample = 'Hi, I\'m '+name+'. This is what I sound like in your podcast.';
-    var r = await callBackendTts(sample, voice);
-    var bytes = pcBase64ToBytes(r.audioBase64);
-    var blob = pcMakeWavBlob(bytes, r.sampleRate||24000, r.channels||1);
-    if(pcPreviewAudio){ pcPreviewAudio.pause(); }
-    pcPreviewAudio = new Audio(URL.createObjectURL(blob));
-    pcPreviewAudio.play();
-  }catch(e){
-    showToast(e.message || 'Could not preview that voice.');
-  }finally{
-    btn.disabled = false; btn.innerHTML = was;
-  }
+  var sample = 'Hi, I\'m '+(pcVoiceLabel(v))+'. This is what I sound like in your podcast.';
+  pcPreviewUtterance = new SpeechSynthesisUtterance(sample);
+  pcPreviewUtterance.voice = v; pcPreviewUtterance.lang = v.lang;
+  pcPreviewUtterance.onend = pcPreviewUtterance.onerror = function(){ btn.disabled = false; btn.innerHTML = was; };
+  speechSynthesis.speak(pcPreviewUtterance);
 }
 
 /* ---- settings UI wiring ---- */
@@ -4922,8 +4860,8 @@ function pcParseScriptJSON(raw){
 
 async function runPodcastScriptGen(){
   if(!pcState.notes.trim()){ showToast('Paste or upload your notes first.'); return; }
-  pcApplyPersonaChoice(1);
-  pcApplyPersonaChoice(2);
+  pcApplyVoiceChoice(1);
+  pcApplyVoiceChoice(2);
   pcState.settings.fillGaps = $('pcFillGaps').checked;
 
   pcShowView('pcScriptView');
@@ -5018,83 +4956,139 @@ function pcRenderScript(){
 }
 
 /* ---- audio generation ---- */
-var PC_PAUSE_SEC = 0.45;
+// Audio is synthesized live by the browser's own speech engine (Web Speech
+// API) one turn at a time — there's no file to "generate," so starting a
+// podcast is instant, free, and has no external quota to hit. The tradeoff
+// (disclosed to the user up front): no exportable audio file, and no
+// sample-accurate seeking — only jumping to the nearest line.
 async function runGenerateAudio(){
   if(!pcState.turns.length){ showToast('Nothing to generate yet.'); return; }
-  var btn = $('btnPcGenerateAudio');
-  btn.disabled = true;
-  var was = btn.innerHTML;
-  try{
-    var sampleRate = 24000, channels = 1;
-    var pieces = [];
-    for(var i=0;i<pcState.turns.length;i++){
-      btn.innerHTML = '<span class="spin"></span>Preparing voices &amp; generating audio ('+(i+1)+'/'+pcState.turns.length+')…';
-      var t = pcState.turns[i];
-      var voice = t.speaker===1 ? pcState.speaker1.voice : pcState.speaker2.voice;
-      var r = await pcTtsWithRetry(t.text, voice, function(waitSec, attempt){
-        btn.innerHTML = '<span class="spin"></span>The AI voice provider is rate-limiting us (free tier) — waiting '+waitSec+'s before continuing ('+(i+1)+'/'+pcState.turns.length+')…';
-      });
-      sampleRate = r.sampleRate||24000; channels = r.channels||1;
-      var bytes = pcBase64ToBytes(r.audioBase64);
-      t.pcm = bytes;
-      t.durationSec = pcBytesDurationSec(bytes.length, sampleRate, channels);
-      pieces.push(bytes);
-      if(i < pcState.turns.length-1) pieces.push(pcSilenceBytes(PC_PAUSE_SEC, sampleRate, channels));
-    }
-    btn.innerHTML = '<span class="spin"></span>Finalizing podcast…';
-    var cursor = 0;
-    pcState.turns.forEach(function(t, i){
-      t.startSec = cursor;
-      cursor += t.durationSec + (i<pcState.turns.length-1 ? PC_PAUSE_SEC : 0);
-    });
-    var finalPcm = pcConcatBytes(pieces);
-    pcState.audioBlob = pcMakeWavBlob(finalPcm, sampleRate, channels);
-    pcState.audioUrl = URL.createObjectURL(pcState.audioBlob);
-    pcState.createdAt = pcState.createdAt || Date.now();
-    pcState.id = pcState.id || ('pc'+Date.now());
-
-    await pcSavePodcastToLibrary();
-    pcOpenPlayer();
-  }catch(e){
-    showToast(e.message || 'Could not generate audio. Try again.');
-  }finally{
-    btn.disabled = false; btn.innerHTML = was;
-  }
+  pcState.createdAt = pcState.createdAt || Date.now();
+  pcState.id = pcState.id || ('pc'+Date.now());
+  try{ await pcSavePodcastToLibrary(); }
+  catch(e){ /* saving to the library is best-effort — still let them listen even if it fails */ }
+  pcOpenPlayer();
 }
 
 async function pcSavePodcastToLibrary(){
-  var totalDuration = pcState.turns.length ? (pcState.turns[pcState.turns.length-1].startSec + pcState.turns[pcState.turns.length-1].durationSec) : 0;
+  pcBuildTimeline();
   var meta = {
     id: pcState.id, title: pcState.title, subject: pcState.subject, createdAt: pcState.createdAt,
-    durationSec: totalDuration,
+    durationEstSec: pcPlayer.totalEst,
     speaker1: pcState.speaker1, speaker2: pcState.speaker2,
-    turns: pcState.turns.map(function(t){ return {speaker:t.speaker, text:t.text, startSec:t.startSec, durationSec:t.durationSec}; }),
+    turns: pcState.turns.map(function(t){ return {speaker:t.speaker, text:t.text}; }),
     keyTakeaways: pcState.keyTakeaways,
     notesPreview: pcState.notes.slice(0,300),
     artwork: pcArtworkFor(pcState.subject)
   };
-  await pcSavePodcast(meta, pcState.audioBlob);
+  await pcSavePodcast(meta);
 }
 
-/* ---- player ---- */
+/* ---- player: drives the Web Speech API turn-by-turn instead of an <audio>
+   element, since there's no single audio file. Time/progress are ESTIMATES
+   from word count at a natural speaking pace, corrected to the real turn
+   boundary every time a line actually finishes. ---- */
 function pcFmtTime(sec){
   if(!isFinite(sec)||sec<0) sec=0;
   var m = Math.floor(sec/60), s = Math.round(sec%60);
   return m+':'+(s<10?'0':'')+s;
 }
+var pcPlayer = { idx:-1, playing:false, rate:1, volume:1, totalEst:0, turnStartedAt:0, tickTimer:null, watchdogTimer:null, currentUtterance:null };
+function pcBuildTimeline(){
+  var cursor = 0;
+  pcState.turns.forEach(function(t){
+    var words = wordCount(t.text) || Math.max(1, Math.round(t.text.length/5));
+    t.estDur = Math.max(0.8, words/2.5); // ~150 words/min natural speaking pace
+    t.estStart = cursor;
+    cursor += t.estDur;
+  });
+  pcPlayer.totalEst = cursor;
+}
+function pcElapsedEstimate(){
+  var t = pcState.turns[pcPlayer.idx];
+  if(!t) return 0;
+  var inTurn = pcPlayer.playing ? Math.min(t.estDur, (Date.now()-pcPlayer.turnStartedAt)/1000*pcPlayer.rate) : 0;
+  return t.estStart + inTurn;
+}
+function pcRenderPlayPauseBtn(){
+  $('btnPcPlayPause').innerHTML = pcPlayer.playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
+}
+function pcStopWatchdog(){
+  if(pcPlayer.watchdogTimer){ clearInterval(pcPlayer.watchdogTimer); pcPlayer.watchdogTimer = null; }
+}
+function pcSpeakTurn(i){
+  if(!window.speechSynthesis){ showToast('Your browser does not support built-in speech.'); return; }
+  speechSynthesis.cancel();
+  pcStopWatchdog();
+  if(i<0 || i>=pcState.turns.length){
+    pcPlayer.idx = pcState.turns.length; pcPlayer.playing = false; pcRenderPlayPauseBtn();
+    pcUpdateNowPlaying(-1);
+    return;
+  }
+  pcPlayer.idx = i;
+  var t = pcState.turns[i];
+  var voiceObj = pcVoiceObjFor(t.speaker===1?1:2);
+  var utt = new SpeechSynthesisUtterance(t.text);
+  if(voiceObj){ utt.voice = voiceObj; utt.lang = voiceObj.lang; }
+  utt.rate = pcPlayer.rate; utt.volume = pcPlayer.volume;
+  utt.onstart = function(){
+    pcPlayer.turnStartedAt = Date.now(); pcPlayer.playing = true;
+    pcRenderPlayPauseBtn(); pcUpdateNowPlaying(i);
+    // Chrome has a long-standing bug where speech silently halts after
+    // ~15s unless nudged — a periodic pause/resume keeps long lines alive.
+    pcStopWatchdog();
+    pcPlayer.watchdogTimer = setInterval(function(){
+      if(speechSynthesis.speaking && !speechSynthesis.paused){ speechSynthesis.pause(); speechSynthesis.resume(); }
+    }, 4000);
+  };
+  utt.onend = function(){ pcStopWatchdog(); pcSpeakTurn(i+1); };
+  utt.onerror = function(e){
+    pcStopWatchdog();
+    if(e.error!=='interrupted' && e.error!=='canceled') pcSpeakTurn(i+1);
+  };
+  pcPlayer.currentUtterance = utt;
+  speechSynthesis.speak(utt);
+}
+function pcTogglePlayPause(){
+  if(!window.speechSynthesis) return;
+  if(speechSynthesis.paused){
+    speechSynthesis.resume(); pcPlayer.playing = true; pcRenderPlayPauseBtn();
+  } else if(speechSynthesis.speaking && pcPlayer.playing){
+    speechSynthesis.pause(); pcPlayer.playing = false; pcRenderPlayPauseBtn();
+  } else {
+    pcSpeakTurn(pcPlayer.idx>=0 && pcPlayer.idx<pcState.turns.length ? pcPlayer.idx : 0);
+  }
+}
+function pcTick(){
+  if(!pcPlayer.totalEst) return;
+  var elapsed = pcElapsedEstimate();
+  $('pcSeek').value = Math.round(Math.min(1, elapsed/pcPlayer.totalEst)*1000);
+  $('pcTimeCur').textContent = pcFmtTime(elapsed);
+}
 function pcOpenPlayer(){
   $('pcPlayerTitle').textContent = pcState.title;
   $('pcPlayerSubject').textContent = pcState.subject;
   $('pcArtwork').innerHTML = pcArtworkFor(pcState.subject);
-  var audio = $('pcAudio');
-  audio.src = pcState.audioUrl;
-  audio.playbackRate = 1;
+  pcBuildTimeline();
+  pcPlayer.rate = 1; pcPlayer.volume = 1;
   $('pcVolume').value = 1;
+  Array.prototype.forEach.call($('pcSpeedRow').querySelectorAll('[data-speed]'), function(x){ x.classList.toggle('on', x.getAttribute('data-speed')==='1'); });
+  $('pcTimeTotal').textContent = '~'+pcFmtTime(pcPlayer.totalEst);
+  $('pcSeek').value = 0; $('pcTimeCur').textContent = '0:00';
   pcRenderTranscript();
   pcRenderTakeaways();
   $('pcStudyResult').innerHTML = '';
   $('pcAskAnswer').textContent = '';
   pcShowView('pcPlayerView');
+  if(pcPlayer.tickTimer) clearInterval(pcPlayer.tickTimer);
+  pcPlayer.tickTimer = setInterval(pcTick, 250);
+  pcSpeakTurn(0);
+}
+function pcStopPlayerAndTimers(){
+  if(window.speechSynthesis) speechSynthesis.cancel();
+  pcStopWatchdog();
+  if(pcPlayer.tickTimer){ clearInterval(pcPlayer.tickTimer); pcPlayer.tickTimer = null; }
+  pcPlayer.playing = false;
 }
 function pcRenderTakeaways(){
   $('pcTakeaways').innerHTML = pcState.keyTakeaways.length
@@ -5109,50 +5103,43 @@ function pcRenderTranscript(){
       '<div><div class="pc-turn-name">'+esc(name)+'</div><div class="pc-turn-text-static">'+esc(t.text)+'</div></div></div>';
   }).join('');
   Array.prototype.forEach.call($('pcTranscript').querySelectorAll('.pc-turn-row'), function(row){
-    row.onclick = function(){
-      var i = parseInt(row.getAttribute('data-idx'),10);
-      $('pcAudio').currentTime = pcState.turns[i].startSec;
-      $('pcAudio').play();
-    };
+    row.onclick = function(){ pcSpeakTurn(parseInt(row.getAttribute('data-idx'),10)); };
   });
 }
-function pcUpdateNowPlaying(t){
-  var idx = -1;
-  for(var i=0;i<pcState.turns.length;i++){ if(t >= pcState.turns[i].startSec) idx = i; else break; }
+function pcUpdateNowPlaying(idx){
   var rows = $('pcTranscript').querySelectorAll('.pc-turn-row');
   Array.prototype.forEach.call(rows, function(row,i){ row.classList.toggle('active', i===idx); });
-  if(idx>-1){
+  if(idx>-1 && pcState.turns[idx]){
     var name = pcState.turns[idx].speaker===1?pcState.speaker1.name:pcState.speaker2.name;
     $('pcNowSpeaking').innerHTML = '&#127908; Currently speaking: <b>'+esc(name)+'</b>';
     if(rows[idx]) rows[idx].scrollIntoView({block:'nearest', behavior:'smooth'});
+  } else {
+    $('pcNowSpeaking').innerHTML = '&#127908; Currently speaking: <b>&mdash;</b>';
   }
 }
 
 (function initPlayerControls(){
-  var audio = $('pcAudio');
-  $('btnPcPlayPause').onclick = function(){
-    if(audio.paused){ audio.play(); } else { audio.pause(); }
-  };
-  audio.addEventListener('play', function(){ $('btnPcPlayPause').innerHTML = '&#10074;&#10074; Pause'; });
-  audio.addEventListener('pause', function(){ $('btnPcPlayPause').innerHTML = '&#9654; Play'; });
-  audio.addEventListener('loadedmetadata', function(){ $('pcTimeTotal').textContent = pcFmtTime(audio.duration); });
-  audio.addEventListener('timeupdate', function(){
-    if(!audio.duration) return;
-    $('pcSeek').value = Math.round((audio.currentTime/audio.duration)*1000);
-    $('pcTimeCur').textContent = pcFmtTime(audio.currentTime);
-    pcUpdateNowPlaying(audio.currentTime);
+  $('btnPcPlayPause').onclick = pcTogglePlayPause;
+  $('pcSeek').addEventListener('change', function(){
+    if(!pcPlayer.totalEst) return;
+    var target = (parseInt($('pcSeek').value,10)/1000) * pcPlayer.totalEst;
+    var idx = 0;
+    for(var i=0;i<pcState.turns.length;i++){ if(pcState.turns[i].estStart<=target) idx=i; else break; }
+    pcSpeakTurn(idx);
   });
-  $('pcSeek').oninput = function(){
-    if(audio.duration) audio.currentTime = (parseInt($('pcSeek').value,10)/1000)*audio.duration;
+  $('btnPcSkipBack').onclick = function(){ pcSpeakTurn(Math.max(0, pcPlayer.idx-1)); };
+  $('btnPcSkipFwd').onclick = function(){ pcSpeakTurn(Math.min(pcState.turns.length-1, pcPlayer.idx+1)); };
+  $('pcVolume').oninput = function(){
+    pcPlayer.volume = parseFloat($('pcVolume').value);
+    if(pcPlayer.currentUtterance) pcPlayer.currentUtterance.volume = pcPlayer.volume;
   };
-  $('btnPcSkipBack').onclick = function(){ audio.currentTime = Math.max(0, audio.currentTime-10); };
-  $('btnPcSkipFwd').onclick = function(){ audio.currentTime = Math.min(audio.duration||0, audio.currentTime+10); };
-  $('pcVolume').oninput = function(){ audio.volume = parseFloat($('pcVolume').value); };
   Array.prototype.forEach.call($('pcSpeedRow').querySelectorAll('[data-speed]'), function(btn){
     btn.onclick = function(){
       Array.prototype.forEach.call($('pcSpeedRow').querySelectorAll('[data-speed]'), function(x){ x.classList.remove('on'); });
       btn.classList.add('on');
-      audio.playbackRate = parseFloat(btn.getAttribute('data-speed'));
+      pcPlayer.rate = parseFloat(btn.getAttribute('data-speed'));
+      // Rate can't change mid-utterance, so restart the current line at the new rate for an immediate effect.
+      if(pcPlayer.idx>=0 && pcPlayer.idx<pcState.turns.length) pcSpeakTurn(pcPlayer.idx);
     };
   });
 })();
@@ -5209,7 +5196,7 @@ async function pcRenderLibrary(){
       '<div class="pc-card-art">'+(p.artwork||pcArtworkFor(p.subject))+'</div>'+
       '<div class="pc-card-bd">'+
         '<h5>'+esc(p.title)+'</h5>'+
-        '<div class="mini">'+esc(p.subject)+' &middot; '+pcFmtTime(p.durationSec)+'</div>'+
+        '<div class="mini">'+esc(p.subject)+' &middot; ~'+pcFmtTime(p.durationEstSec||0)+'</div>'+
         '<div class="mini">Created '+new Date(p.createdAt).toLocaleDateString()+'</div>'+
         '<div class="pc-card-actions">'+
           '<button class="btn sm primary" data-act="play" data-id="'+p.id+'" type="button">&#9654; Play</button>'+
@@ -5232,13 +5219,18 @@ async function pcLoadFromLibrary(id){
   var list = await pcGetAllPodcasts();
   var meta = list.find(function(p){ return p.id===id; });
   if(!meta) return;
-  var blob = await pcGetAudio(id);
+  await pcLoadVoices();
   pcState = pcNewState();
   pcState.id = meta.id; pcState.title = meta.title; pcState.subject = meta.subject;
   pcState.createdAt = meta.createdAt; pcState.speaker1 = meta.speaker1; pcState.speaker2 = meta.speaker2;
+  pcState.notes = meta.notesPreview || '';
   pcState.turns = meta.turns; pcState.keyTakeaways = meta.keyTakeaways || [];
-  pcState.audioBlob = blob; pcState.audioUrl = blob ? URL.createObjectURL(blob) : null;
-  if(!pcState.audioUrl){ showToast('This podcast\'s audio could not be found.'); return; }
+  // The exact voice saved with this podcast might not exist on this device/browser —
+  // pcVoiceObjFor() falls back to the first available voice automatically, so
+  // playback still works, just possibly with a different voice than originally chosen.
+  if(!pcEnglishVoices().some(function(v){ return v.voiceURI===pcState.speaker1.voiceURI; })){
+    showToast('The original voices aren’t available on this device — using the closest match instead.');
+  }
   pcOpenPlayer();
 }
 
@@ -5256,14 +5248,14 @@ function pcUpdWordCount(){ $('pcNotesCnt').textContent = wordCount($('pcNotes').
 
 $('btnPcNew').onclick = function(){ pcResetSetupForm(); pcShowView('pcSetupView'); };
 $('btnPcBackToLibrary1').onclick = function(){ pcRenderLibrary(); pcShowView('pcLibraryView'); };
-$('btnPcBackToLibrary2').onclick = function(){ if($('pcAudio')) $('pcAudio').pause(); pcRenderLibrary(); pcShowView('pcLibraryView'); };
+$('btnPcBackToLibrary2').onclick = function(){ pcStopPlayerAndTimers(); pcRenderLibrary(); pcShowView('pcLibraryView'); };
 $('btnPcBackToSetup').onclick = function(){ pcShowView('pcSetupView'); };
 $('btnPcGenerateScript').onclick = function(){ pcState.notes = $('pcNotes').value; runPodcastScriptGen(); };
 $('btnPcRegenAll').onclick = function(){ runPodcastScriptGen(); };
 $('btnPcGenerateAudio').onclick = runGenerateAudio;
 $('pcNotes').addEventListener('input', pcUpdWordCount);
-$('pcVoice1').addEventListener('change', function(){ pcApplyPersonaChoice(1); });
-$('pcVoice2').addEventListener('change', function(){ pcApplyPersonaChoice(2); });
+$('pcVoice1').addEventListener('change', function(){ pcApplyVoiceChoice(1); });
+$('pcVoice2').addEventListener('change', function(){ pcApplyVoiceChoice(2); });
 $('btnPcPreview1').onclick = function(){ pcPreviewVoice(1); };
 $('btnPcPreview2').onclick = function(){ pcPreviewVoice(2); };
 Array.prototype.forEach.call(document.querySelectorAll('[data-pcstudy]'), function(btn){
@@ -5306,6 +5298,7 @@ var NO_ENGINEBAR_PANES = {home:1, dashboard:1, projects:1, writing:1, rubric:1, 
 var CURRENT_PANE = 'home';
 function renderPane(which){
   if(!PANES[which]) which='home';
+  if(CURRENT_PANE==='podcast' && which!=='podcast' && typeof pcStopPlayerAndTimers==='function') pcStopPlayerAndTimers();
   CURRENT_PANE = which;
   for(var k in PANES){
     var on = (k===which);
