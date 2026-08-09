@@ -440,10 +440,10 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
   .project-row{flex-wrap:wrap}
 }
 
-/* scroll reveal — Home's sections fade/slide in as they cross into view.
-   Each .reveal element starts hidden; JS adds .in via IntersectionObserver
-   the first time it's on screen. Respects reduced-motion by just being
-   visible from the start, no observer needed for that case. */
+/* scroll reveal — Home's sections fade/slide in every time they cross into
+   view (and back out when scrolled away from — see the IntersectionObserver
+   below). Respects reduced-motion by just being visible from the start, no
+   observer needed for that case. */
 .reveal{opacity:0; transform:translateY(26px);
   transition:opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1)}
 .reveal.in{opacity:1; transform:translateY(0)}
@@ -465,6 +465,21 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 .f-icon{width:44px; height:44px; border-radius:12px; flex:0 0 auto; display:grid; place-items:center;
   background:var(--accent-soft); color:var(--accent); transition:var(--t-theme)}
 .f-icon svg{width:21px; height:21px}
+
+/* how it works — three numbered steps, Home only */
+.steps-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+@media (max-width:700px){ .steps-grid{grid-template-columns:1fr} }
+.step-card{padding:26px}
+.step-num{width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--accent-contrast);
+  display:grid; place-items:center; font-size:14px; font-weight:700; margin-bottom:16px;
+  font-variant-numeric:tabular-nums}
+.step-card h3{font-size:15px; margin-bottom:6px; letter-spacing:-.005em}
+.step-card p{font-size:12.75px; color:var(--tx-2); line-height:1.6}
+
+/* closing CTA — last thing on Home, nudges signed-out visitors to convert */
+.home-cta{text-align:center; max-width:560px; margin:0 auto; padding:70px 0 96px}
+.home-cta h2{font-size:26px; letter-spacing:-.015em; margin-bottom:10px}
+.home-cta p{font-size:14px; color:var(--tx-2); margin-bottom:26px}
 
 /* by the numbers — the app's own measured facts, visualized. No outside
    claims, nothing invented: every figure here traces back to a number
@@ -906,7 +921,74 @@ window.dispatchEvent(new Event('kauth-ready'));
 
   <div class="wrap">
 
-  <section class="dash-section" style="border-top:none">
+  <section class="dash-section" style="border-top:none; padding-top:72px">
+    <div class="dash-section-hd reveal">
+      <p class="section-lab">How it works</p>
+      <h2>From pasted text to a full report in seconds</h2>
+      <p>No setup and no per-scan cost on the on-device tools &mdash; paste your writing, pick a tool, done.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="card step-card reveal" style="transition-delay:0ms">
+        <div class="step-num">1</div>
+        <h3>Paste or upload</h3>
+        <p>Drop in an essay, article, or research notes &mdash; typed straight in, pasted, or uploaded as a file.</p>
+      </div>
+      <div class="card step-card reveal" style="transition-delay:80ms">
+        <div class="step-num">2</div>
+        <h3>Pick a tool</h3>
+        <p>Detect AI writing, humanize flagged sentences, grade against a rubric, or turn notes into a study guide.</p>
+      </div>
+      <div class="card step-card reveal" style="transition-delay:160ms">
+        <div class="step-num">3</div>
+        <h3>Get your results</h3>
+        <p>A clear score, sentence-by-sentence breakdown, and concrete next steps &mdash; not just a pass/fail number.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="dash-section">
+    <div class="dash-section-hd reveal">
+      <p class="section-lab">Explore the suite</p>
+      <h2>One suite, eight tools</h2>
+      <p>Everything below is real and already working &mdash; create a free account to open any of them.</p>
+    </div>
+    <div class="tool-grid">
+      <button class="card tool-card reveal" style="transition-delay:0ms" data-goto="detect" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg></div>
+        <h3>AI Detector</h3><p>Scan any text with two on-device models and see exactly which sentences read as machine-written.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:40ms" data-goto="human" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+        <h3>AI Humanizer</h3><p>Rewrite the sentences a detector flags so your text keeps your voice while reading naturally.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:80ms" data-goto="writing" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg></div>
+        <h3>Writing Analytics</h3><p>A full readability and style breakdown &mdash; tone, structure, vocabulary and more.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:120ms" data-goto="rubric" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Rubric Analyzer</h3><p>Grade your essay against your teacher's actual rubric &mdash; see what's missing before you submit.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:160ms" data-goto="coach" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+        <h3>Essay Coach</h3><p>Highlights specific sentences worth revising and explains why &mdash; you stay in control of every change.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:200ms" data-goto="research" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <h3>Research Assistant</h3><p>Summarize sources, pull key quotes, and generate MLA/APA/Chicago citations automatically.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:240ms" data-goto="study" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5"/></svg></div>
+        <h3>Study Generator</h3><p>Turn notes or slides into flashcards, quizzes, study guides and chapter summaries.</p>
+      </button>
+      <button class="card tool-card reveal" style="transition-delay:280ms" data-goto="podcast" type="button">
+        <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></svg></div>
+        <h3>Podcast Generator</h3><p>Turn your notes into a two-speaker study podcast you can listen to.</p>
+      </button>
+    </div>
+  </section>
+
+  <section class="dash-section">
     <div class="dash-section-hd reveal">
       <p class="section-lab">By the numbers</p>
       <h2>What this suite's own testing shows</h2>
@@ -995,6 +1077,15 @@ window.dispatchEvent(new Event('kauth-ready'));
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="home-cta reveal">
+    <h2>Ready to see what your writing really says?</h2>
+    <p>Create a free account and get instant access to the full suite &mdash; no credit card, ever.</p>
+    <button class="btn primary lg" id="btnHomeCta" type="button">
+      Create free account
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
   </section>
 
   </div>
@@ -5296,6 +5387,11 @@ var PANES = {
   settings:  {pane:'paneSettings'}
 };
 var NO_ENGINEBAR_PANES = {home:1, dashboard:1, projects:1, writing:1, rubric:1, coach:1, research:1, study:1, podcast:1, settings:1};
+/* Every pane except Home requires a signed-in account. Firebase resolves the
+   session asynchronously (it has to check IndexedDB first), so on a cold
+   load we don't yet know if the visitor is actually logged in — see
+   AUTH_RESOLVED below, which re-runs this guard once the real answer is in. */
+var PROTECTED_PANES = {dashboard:1, projects:1, detect:1, human:1, writing:1, rubric:1, coach:1, research:1, study:1, podcast:1, settings:1};
 /* Routing lives in the URL hash (#home / #detect / #human / ...) rather than
    only in JS state, for two reasons a plain classList toggle can't give:
    reloading the page must land back on the same pane instead of resetting to
@@ -5304,8 +5400,22 @@ var NO_ENGINEBAR_PANES = {home:1, dashboard:1, projects:1, writing:1, rubric:1, 
    "which pane is showing" and "what's in the URL" are the same fact — the
    hash change is what triggers the render, not the click handler directly. */
 var CURRENT_PANE = 'home';
+var AUTH_RESOLVED = false;
 function renderPane(which){
   if(!PANES[which]) which='home';
+  if(PROTECTED_PANES[which] && !CURRENT_USER){
+    if(AUTH_RESOLVED){
+      // definitely signed out — bounce to Home and prompt sign-in instead of
+      // leaving a dead link sitting in the address bar
+      if(location.hash.slice(1) !== 'home') history.replaceState(null, '', '#home');
+      showToast('Log in to access that.');
+      if(typeof window.openAuthModal === 'function') window.openAuthModal('login');
+    } else {
+      // session status not confirmed yet — hold on Home rather than flash
+      // protected content; handleAuthChange() re-runs this once it's known
+    }
+    which = 'home';
+  }
   if(CURRENT_PANE==='podcast' && which!=='podcast' && typeof pcStopPlayerAndTimers==='function') pcStopPlayerAndTimers();
   CURRENT_PANE = which;
   for(var k in PANES){
@@ -5349,9 +5459,9 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function(
 
 /* ---------- scroll reveal ----------
    .reveal elements (Home's stat cards, "coming soon" cards, section
-   headings) fade/slide in the first time they cross into view. One
-   shared observer, unobserve-on-reveal since this only ever needs to
-   happen once per element. */
+   headings) fade/slide in every time they cross into view — and fade back
+   out when scrolled away from, so scrolling up and back down re-triggers
+   the same animation instead of it being a one-shot. */
 (function(){
   if(!('IntersectionObserver' in window)){
     // no IO support — just show everything, don't block content on a feature detect
@@ -5360,10 +5470,7 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function(
   }
   var io = new IntersectionObserver(function(entries){
     entries.forEach(function(entry){
-      if(entry.isIntersecting){
-        entry.target.classList.add('in');
-        io.unobserve(entry.target);
-      }
+      entry.target.classList.toggle('in', entry.isIntersecting);
     });
   }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
   Array.prototype.forEach.call(document.querySelectorAll('.reveal'), function(el){ io.observe(el); });
@@ -5464,6 +5571,8 @@ function updateAuthNav(){
   // "Go to Dashboard" once signed in — never both.
   $('btnGetStarted').classList.toggle('hide', loggedIn);
   $('btnGoDashboard').classList.toggle('hide', !loggedIn);
+  var homeCta = document.getElementById('btnHomeCta');
+  if(homeCta) homeCta.closest('section').classList.toggle('hide', loggedIn);
   // Dashboard greets signed-in users by name instead of the generic title.
   $('dashGreeting').textContent = loggedIn ? ('Welcome back, ' + firstNameFor(CURRENT_USER)) : 'Dashboard';
   if(loggedIn) $('avatarInitials').textContent = initialsFor(CURRENT_USER);
@@ -5471,6 +5580,14 @@ function updateAuthNav(){
 function handleAuthChange(user){
   CURRENT_USER = user;
   updateAuthNav();
+  if(!AUTH_RESOLVED){
+    // first time Firebase has told us the real session state — re-run
+    // routing so a deep link into a protected pane either now renders
+    // (already signed in) or bounces to Home (confirmed signed out),
+    // instead of staying stuck on the placeholder Home we held it on.
+    AUTH_RESOLVED = true;
+    renderPane(location.hash.slice(1) || 'home');
+  }
 }
 if(window.KAuth) window.KAuth.onChange(handleAuthChange);
 else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(handleAuthChange); }, { once:true });
@@ -5523,6 +5640,7 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
     overlay.classList.remove('on');
     submitBtn.disabled = false;
   }
+  window.openAuthModal = openModal; // route guard (renderPane) needs to pop this from outside the closure
   $('authModalClose').onclick = closeModal;
   overlay.addEventListener('click', function(e){ if(e.target === overlay) closeModal(); });
   document.addEventListener('keydown', function(e){
@@ -5592,7 +5710,7 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
   [$('btnLoginNav'), $('btnLoginAvatar')].forEach(function(btn){
     btn.onclick = function(){ openModal('login'); };
   });
-  [$('btnSignupNav'), $('btnSignupAvatar'), $('btnGetStarted')].forEach(function(btn){
+  [$('btnSignupNav'), $('btnSignupAvatar'), $('btnGetStarted'), $('btnHomeCta')].forEach(function(btn){
     btn.onclick = function(){ openModal('signup'); };
   });
   $('btnLogoutAvatar').onclick = function(){
