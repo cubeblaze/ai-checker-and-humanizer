@@ -439,7 +439,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
    until there's a real one). Dashed to read as "not real yet", same cue
    as the "coming soon" cards. */
 .project-list{background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg);
-  overflow:hidden; transition:var(--t-theme); max-width:760px; margin:0 auto}
+  overflow:hidden; transition:var(--t-theme); max-width:920px}
 .project-row{display:flex; align-items:center; gap:16px; padding:18px 22px; border-bottom:1px solid var(--line)}
 .project-row:last-child{border-bottom:0}
 .project-row .f-icon{background:var(--surface-2); color:var(--tx-3); flex:0 0 auto}
@@ -720,7 +720,13 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 .settings-inline-form input{flex:1; min-width:180px; background:var(--surface-2); color:var(--tx); border:1px solid var(--line);
   border-radius:var(--r-sm); padding:9px 12px; font-size:13.5px; outline:none; transition:border-color .15s, box-shadow .15s, var(--t-theme)}
 .settings-inline-form input:focus{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accent-soft); background:var(--surface)}
-.settings-inline-form-stack{padding:0 0 20px; display:grid; gap:10px; max-width:320px; border-bottom:1px solid var(--line)}
+/* password-change panel — a distinct inset card (not just bare stacked
+   inputs) so changing something sensitive reads as its own deliberate step */
+.pw-form{background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r);
+  padding:20px 20px 4px; margin:2px 0 20px; max-width:360px; transition:var(--t-theme)}
+.pw-form .auth-field{margin-bottom:16px}
+.pw-form .auth-field input{background:var(--surface)}
+.pw-form-hint{font-size:11.75px; color:var(--tx-3); margin:-8px 0 16px}
 .settings-danger-card{border-color:color-mix(in srgb, var(--bad) 35%, var(--line))}
 .btn-danger{color:var(--bad); border-color:color-mix(in srgb, var(--bad) 40%, var(--line-strong))}
 .btn-danger:hover:not(:disabled){background:color-mix(in srgb, var(--bad) 8%, transparent)}
@@ -1985,9 +1991,16 @@ window.dispatchEvent(new Event('kauth-ready'));
           <div class="settings-row-val">••••••••</div>
           <button class="btn sm" id="btnEditPassword" type="button">Change</button>
         </div>
-        <form class="settings-inline-form-stack hide" id="editPasswordForm">
-          <input type="password" id="editCurrentPass" placeholder="Current password" autocomplete="current-password">
-          <input type="password" id="editNewPass" placeholder="New password (min 6 characters)" autocomplete="new-password">
+        <form class="pw-form hide" id="editPasswordForm">
+          <label class="auth-field">
+            <span>Current password</span>
+            <input type="password" id="editCurrentPass" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+          </label>
+          <label class="auth-field">
+            <span>New password</span>
+            <input type="password" id="editNewPass" autocomplete="new-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+          </label>
+          <p class="pw-form-hint">Use at least 6 characters.</p>
           <p class="auth-modal-err hide" id="editPassErr"></p>
           <div class="row" style="margin-top:0">
             <button class="btn primary sm" type="submit">Update password</button>
