@@ -200,6 +200,15 @@ button,input,textarea{font:inherit; color:inherit}
   font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--tx-3)}
 .auth-modal-divider::before, .auth-modal-divider::after{content:""; flex:1; height:1px; background:var(--line)}
 
+/* ---------- post-signup survey (select-all-that-apply chips) ---------- */
+.survey-modal{max-width:460px}
+.survey-modal-lab{font-size:12.5px; font-weight:700; color:var(--tx-2); margin-bottom:10px; display:block}
+.chip-group{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px}
+.chip-check{appearance:none; border:1px solid var(--line-strong); background:var(--surface); color:var(--tx);
+  font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:999px; cursor:pointer; transition:.14s}
+.chip-check:hover{background:var(--surface-2)}
+.chip-check.on{background:var(--accent); border-color:var(--accent); color:var(--accent-contrast)}
+
 /* ---------- theme toggle switch ---------- */
 .theme-switch{appearance:none; border:1px solid var(--line); background:var(--surface-2);
   width:50px; height:28px; border-radius:999px; position:relative; cursor:pointer; padding:0;
@@ -430,7 +439,7 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
    until there's a real one). Dashed to read as "not real yet", same cue
    as the "coming soon" cards. */
 .project-list{background:var(--surface); border:1px dashed var(--line-strong); border-radius:var(--r-lg);
-  overflow:hidden; transition:var(--t-theme)}
+  overflow:hidden; transition:var(--t-theme); max-width:760px; margin:0 auto}
 .project-row{display:flex; align-items:center; gap:16px; padding:18px 22px; border-bottom:1px solid var(--line)}
 .project-row:last-child{border-bottom:0}
 .project-row .f-icon{background:var(--surface-2); color:var(--tx-3); flex:0 0 auto}
@@ -700,6 +709,21 @@ label.chk span small{display:block; color:var(--tx-3); font-size:11.5px; line-he
 .empty{color:var(--tx-3); font-size:13.25px; text-align:center; padding:34px 12px; line-height:1.6}
 .empty svg{width:30px; height:30px; opacity:.32; margin-bottom:11px}
 .ok-txt{color:var(--ok)} .bad-txt{color:var(--bad)}
+
+/* ---------- settings ---------- */
+.settings-row{display:flex; align-items:center; gap:16px; padding:18px 0; border-bottom:1px solid var(--line)}
+.settings-row:last-child{border-bottom:0}
+.settings-row-lab{width:110px; flex:0 0 auto; font-size:12.5px; font-weight:700; color:var(--tx-2)}
+.settings-row-val{flex:1; min-width:0; font-size:14px; color:var(--tx); overflow-wrap:anywhere}
+.settings-row .btn{flex:0 0 auto}
+.settings-inline-form{padding:0 0 20px; display:flex; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--line)}
+.settings-inline-form input{flex:1; min-width:180px; background:var(--surface-2); color:var(--tx); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:9px 12px; font-size:13.5px; outline:none; transition:border-color .15s, box-shadow .15s, var(--t-theme)}
+.settings-inline-form input:focus{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accent-soft); background:var(--surface)}
+.settings-inline-form-stack{padding:0 0 20px; display:grid; gap:10px; max-width:320px; border-bottom:1px solid var(--line)}
+.settings-danger-card{border-color:color-mix(in srgb, var(--bad) 35%, var(--line))}
+.btn-danger{color:var(--bad); border-color:color-mix(in srgb, var(--bad) 40%, var(--line-strong))}
+.btn-danger:hover:not(:disabled){background:color-mix(in srgb, var(--bad) 8%, transparent)}
 .hide{display:none !important}
 .spin{display:inline-block; width:13px; height:13px; border:2px solid var(--line-strong);
   border-top-color:var(--accent); border-radius:99px; animation:sp .65s linear infinite;
@@ -739,8 +763,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/fireba
 import {
   getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence,
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile,
-  GoogleAuthProvider, signInWithPopup
+  GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo,
+  EmailAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup,
+  updatePassword, deleteUser
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import {
+  getFirestore, doc, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
 var firebaseConfig = {
   apiKey: "AIzaSyD7J8HvG3OCaDkRY57x7KefchNcWLs3xnU",
@@ -754,9 +783,22 @@ var firebaseConfig = {
 
 var app = initializeApp(firebaseConfig);
 var auth = getAuth(app);
+var db = getFirestore(app);
 setPersistence(auth, browserLocalPersistence).catch(function(){ /* private-browsing etc — fall back to session-only */ });
 
 var googleProvider = new GoogleAuthProvider();
+
+// Re-proving identity before a sensitive change (password, delete) — Firebase
+// requires a *recent* login for these and throws auth/requires-recent-login
+// otherwise. Password accounts reauth with their password; Google accounts
+// don't have one on file, so it's a fresh popup consent instead.
+function reauth(currentPassword){
+  var user = auth.currentUser;
+  var providerId = user && user.providerData[0] && user.providerData[0].providerId;
+  if(providerId === 'google.com') return reauthenticateWithPopup(user, googleProvider);
+  var cred = EmailAuthProvider.credential(user.email, currentPassword || '');
+  return reauthenticateWithCredential(user, cred);
+}
 
 window.KAuth = {
   signUp: function(name, email, pass){
@@ -768,7 +810,21 @@ window.KAuth = {
   signIn: function(email, pass){ return signInWithEmailAndPassword(auth, email, pass); },
   signInWithGoogle: function(){ return signInWithPopup(auth, googleProvider); },
   logOut: function(){ return signOut(auth); },
-  onChange: function(cb){ onAuthStateChanged(auth, cb); }
+  onChange: function(cb){ onAuthStateChanged(auth, cb); },
+  isNewUser: function(cred){ var info = getAdditionalUserInfo(cred); return !!(info && info.isNewUser); },
+  authProvider: function(){ var u = auth.currentUser; return u && u.providerData[0] && u.providerData[0].providerId; },
+  changeName: function(name){ return updateProfile(auth.currentUser, { displayName: name }); },
+  changePassword: function(currentPassword, newPassword){
+    return reauth(currentPassword).then(function(){ return updatePassword(auth.currentUser, newPassword); });
+  },
+  deleteAccount: function(currentPassword){
+    return reauth(currentPassword).then(function(){ return deleteUser(auth.currentUser); });
+  }
+};
+window.KDB = {
+  saveOnboarding: function(uid, data){
+    return setDoc(doc(db, 'onboarding', uid), Object.assign({}, data, { savedAt: serverTimestamp() }));
+  }
 };
 window.dispatchEvent(new Event('kauth-ready'));
 </script>
@@ -1889,18 +1945,96 @@ window.dispatchEvent(new Event('kauth-ready'));
 </div>
 </div>
 
-<!-- ============ SETTINGS (placeholder) ============ -->
+<!-- ============ SETTINGS ============ -->
 <div id="paneSettings" class="hide">
-<div class="wrap">
-  <div class="card" style="max-width:600px; margin:40px auto">
-    <div class="card-bd">
-      <div class="empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"/><path d="M12 2.5v3.4M12 18.1v3.4M21.5 12h-3.4M5.9 12H2.5M18.6 5.4l-2.4 2.4M7.8 16.2l-2.4 2.4M18.6 18.6l-2.4-2.4M7.8 7.8 5.4 5.4"/></svg>
-        <div><b style="color:var(--tx)">Settings are on the way.</b><br>Account, notifications and preferences will live here once accounts exist.</div>
-      </div>
-      <p class="mini" style="text-align:center; margin-top:2px">The theme toggle in the navbar already switches between light and dark.</p>
+<div class="wrap dash-wrap">
+
+  <div class="dash-header">
+    <div>
+      <h1>Settings</h1>
+      <p>Manage your account and preferences.</p>
     </div>
   </div>
+
+  <section class="dash-section" style="padding-top:0; border-top:0">
+    <div class="dash-section-hd">
+      <p class="section-lab">Profile</p>
+      <h2>Your account</h2>
+    </div>
+    <div class="card">
+      <div class="card-bd">
+
+        <div class="settings-row" id="settingsNameRow">
+          <div class="settings-row-lab">Name</div>
+          <div class="settings-row-val" id="setName">&mdash;</div>
+          <button class="btn sm" id="btnEditName" type="button">Edit</button>
+        </div>
+        <form class="settings-inline-form hide" id="editNameForm">
+          <input type="text" id="editNameInput" placeholder="Your name" required>
+          <button class="btn primary sm" type="submit">Save</button>
+          <button class="btn sm" type="button" id="cancelEditName">Cancel</button>
+        </form>
+
+        <div class="settings-row">
+          <div class="settings-row-lab">Email</div>
+          <div class="settings-row-val" id="setEmail">&mdash;</div>
+        </div>
+
+        <div class="settings-row" id="settingsPasswordRow">
+          <div class="settings-row-lab">Password</div>
+          <div class="settings-row-val">••••••••</div>
+          <button class="btn sm" id="btnEditPassword" type="button">Change</button>
+        </div>
+        <form class="settings-inline-form-stack hide" id="editPasswordForm">
+          <input type="password" id="editCurrentPass" placeholder="Current password" autocomplete="current-password">
+          <input type="password" id="editNewPass" placeholder="New password (min 6 characters)" autocomplete="new-password">
+          <p class="auth-modal-err hide" id="editPassErr"></p>
+          <div class="row" style="margin-top:0">
+            <button class="btn primary sm" type="submit">Update password</button>
+            <button class="btn sm" type="button" id="cancelEditPassword">Cancel</button>
+          </div>
+        </form>
+        <p class="mini hide" id="googleAccountNote" style="padding:18px 0 0">Your account signs in with Google, so there&rsquo;s no separate Klarity password to change.</p>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="dash-section">
+    <div class="dash-section-hd">
+      <p class="section-lab">Appearance</p>
+      <h2>Theme</h2>
+    </div>
+    <div class="card">
+      <div class="card-bd">
+        <div class="settings-row" style="border-bottom:0">
+          <div class="settings-row-lab">Dark mode</div>
+          <div class="settings-row-val mini">Switch between light and dark. This is the same toggle as the one in the top bar.</div>
+          <button class="theme-switch" type="button" role="switch" aria-checked="false"
+                  title="Toggle theme" aria-label="Toggle dark mode">
+            <span class="knob">
+              <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dash-section">
+    <div class="dash-section-hd">
+      <p class="section-lab">Danger zone</p>
+      <h2>Delete account</h2>
+      <p>Permanently deletes your Klarity account and signs you out everywhere. This can&rsquo;t be undone.</p>
+    </div>
+    <div class="card settings-danger-card">
+      <div class="card-bd">
+        <button class="btn btn-danger" id="btnOpenDelete" type="button">Delete my account</button>
+      </div>
+    </div>
+  </section>
+
 </div>
 </div>
 
@@ -1941,6 +2075,54 @@ window.dispatchEvent(new Event('kauth-ready'));
       <span id="authSwitchLead">Don&rsquo;t have an account?</span>
       <button type="button" id="authSwitchBtn">Sign up</button>
     </p>
+  </div>
+</div>
+
+<div class="auth-modal-overlay" id="surveyModalOverlay" role="presentation">
+  <div class="auth-modal survey-modal" role="dialog" aria-modal="true" aria-labelledby="surveyModalTitle">
+    <button class="auth-modal-close" id="surveyModalClose" type="button" aria-label="Close">&times;</button>
+    <h2 id="surveyModalTitle">Welcome to Klarity!</h2>
+    <p class="auth-modal-sub">Two quick questions &mdash; totally optional, and it helps us build the right things next.</p>
+
+    <span class="survey-modal-lab">How did you hear about Klarity? (select all that apply)</span>
+    <div class="chip-group" id="surveyHeard">
+      <button type="button" class="chip-check" data-val="Social media">Social media</button>
+      <button type="button" class="chip-check" data-val="Friend or classmate">Friend or classmate</button>
+      <button type="button" class="chip-check" data-val="Teacher or school">Teacher or school</button>
+      <button type="button" class="chip-check" data-val="Search engine">Search engine</button>
+      <button type="button" class="chip-check" data-val="Other">Other</button>
+    </div>
+
+    <span class="survey-modal-lab">Which features are you most excited to use? (select all that apply)</span>
+    <div class="chip-group" id="surveyFeatures">
+      <button type="button" class="chip-check" data-val="AI Detector">AI Detector</button>
+      <button type="button" class="chip-check" data-val="AI Humanizer">AI Humanizer</button>
+      <button type="button" class="chip-check" data-val="Writing Analytics">Writing Analytics</button>
+      <button type="button" class="chip-check" data-val="Rubric Analyzer">Rubric Analyzer</button>
+      <button type="button" class="chip-check" data-val="Essay Coach">Essay Coach</button>
+      <button type="button" class="chip-check" data-val="Research Assistant">Research Assistant</button>
+      <button type="button" class="chip-check" data-val="Study Generator">Study Generator</button>
+      <button type="button" class="chip-check" data-val="Podcast Generator">Podcast Generator</button>
+    </div>
+
+    <button class="btn primary wide" id="surveySubmit" type="button">Done</button>
+    <p class="auth-modal-switch"><button type="button" id="surveySkip">Skip for now</button></p>
+  </div>
+</div>
+
+<div class="auth-modal-overlay" id="deleteModalOverlay" role="presentation">
+  <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <button class="auth-modal-close" id="deleteModalClose" type="button" aria-label="Close">&times;</button>
+    <h2 id="deleteModalTitle">Delete your account?</h2>
+    <p class="auth-modal-sub" id="deleteModalSub">This permanently deletes your Klarity account and can&rsquo;t be undone.</p>
+    <label class="auth-field" id="deletePassWrap">
+      <span>Confirm your password</span>
+      <input type="password" id="deletePassInput" autocomplete="current-password">
+    </label>
+    <p class="auth-modal-err hide" id="deleteErr"></p>
+    <button class="btn wide" id="deleteConfirmBtn" type="button" style="background:var(--bad); border-color:var(--bad); color:#fff">
+      Permanently delete account
+    </button>
   </div>
 </div>
 
@@ -5576,6 +5758,7 @@ function updateAuthNav(){
   // Dashboard greets signed-in users by name instead of the generic title.
   $('dashGreeting').textContent = loggedIn ? ('Welcome back, ' + firstNameFor(CURRENT_USER)) : 'Dashboard';
   if(loggedIn) $('avatarInitials').textContent = initialsFor(CURRENT_USER);
+  if(loggedIn && typeof window.populateSettings === 'function') window.populateSettings();
 }
 function handleAuthChange(user){
   CURRENT_USER = user;
@@ -5683,6 +5866,7 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
       if(cred && cred.user){ CURRENT_USER = cred.user; updateAuthNav(); }
       showToast(mode === 'signup' ? 'Account created — welcome to Klarity!' : 'Welcome back!');
       showTab('dashboard');
+      if(mode === 'signup' && cred && cred.user && typeof window.openSurveyModal === 'function') window.openSurveyModal(cred.user.uid);
     }).catch(function(err){
       submitBtn.disabled = false;
       showErr(ERR_MSGS[err && err.code] || 'Something went wrong — please try again.');
@@ -5698,8 +5882,10 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
       btn.disabled = false;
       closeModal();
       if(cred && cred.user){ CURRENT_USER = cred.user; updateAuthNav(); }
-      showToast('Welcome to Klarity!');
+      var isNew = window.KAuth.isNewUser(cred);
+      showToast(isNew ? 'Account created — welcome to Klarity!' : 'Welcome back!');
       showTab('dashboard');
+      if(isNew && cred && cred.user && typeof window.openSurveyModal === 'function') window.openSurveyModal(cred.user.uid);
     }).catch(function(err){
       btn.disabled = false;
       if(err && err.code === 'auth/popup-closed-by-user') return; // user backed out — not an error worth surfacing
@@ -5715,7 +5901,177 @@ else window.addEventListener('kauth-ready', function(){ window.KAuth.onChange(ha
   });
   $('btnLogoutAvatar').onclick = function(){
     $('avatarMenu').classList.remove('on');
-    if(window.KAuth) window.KAuth.logOut().then(function(){ showToast('Logged out.'); });
+    if(window.KAuth) window.KAuth.logOut().then(function(){ showToast('Logged out.'); showTab('home'); });
+  };
+})();
+
+/* ---------- settings pane ---------- */
+(function(){
+  var nameRow = $('settingsNameRow'), setNameEl = $('setName'), setEmailEl = $('setEmail');
+  var editNameForm = $('editNameForm'), editNameInput = $('editNameInput');
+  var pwRow = $('settingsPasswordRow'), editPwForm = $('editPasswordForm');
+  var curPassInput = $('editCurrentPass'), newPassInput = $('editNewPass'), pwErr = $('editPassErr');
+  var googleNote = $('googleAccountNote');
+  var deleteOverlay = $('deleteModalOverlay'), deletePassWrap = $('deletePassWrap'), deletePassInput = $('deletePassInput');
+  var deleteErr = $('deleteErr'), deleteSub = $('deleteModalSub'), deleteBtn = $('deleteConfirmBtn');
+
+  var ERR_MSGS = {
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/invalid-credential': 'Incorrect password.',
+    'auth/weak-password': 'Password should be at least 6 characters.',
+    'auth/requires-recent-login': 'For your security, please confirm your password to continue.',
+    'auth/too-many-requests': 'Too many attempts — please wait a moment and try again.',
+    'auth/network-request-failed': 'Network error — check your connection and try again.',
+    'auth/popup-closed-by-user': 'That was closed before finishing — try again.'
+  };
+
+  // Keeps the Profile card in sync with whatever CURRENT_USER currently is —
+  // called from updateAuthNav() so it's always current whenever Settings is
+  // actually visible (and harmless the rest of the time).
+  window.populateSettings = function(){
+    if(!CURRENT_USER) return;
+    setNameEl.textContent = CURRENT_USER.displayName || '(no name set)';
+    setEmailEl.textContent = CURRENT_USER.email || '—';
+    var isGoogle = window.KAuth && window.KAuth.authProvider() === 'google.com';
+    pwRow.classList.toggle('hide', isGoogle);
+    googleNote.classList.toggle('hide', !isGoogle);
+    if(isGoogle) editPwForm.classList.add('hide');
+  };
+
+  // ---- edit name ----
+  $('btnEditName').onclick = function(){
+    editNameInput.value = CURRENT_USER ? (CURRENT_USER.displayName || '') : '';
+    editNameForm.classList.remove('hide');
+    editNameInput.focus();
+  };
+  $('cancelEditName').onclick = function(){ editNameForm.classList.add('hide'); };
+  editNameForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = editNameInput.value.trim();
+    if(!name) return;
+    window.KAuth.changeName(name).then(function(){
+      if(CURRENT_USER) CURRENT_USER.displayName = name;
+      updateAuthNav();
+      editNameForm.classList.add('hide');
+      showToast('Name updated.');
+    }).catch(function(){
+      showToast('Couldn’t update your name — please try again.');
+    });
+  });
+
+  // ---- change password ----
+  $('btnEditPassword').onclick = function(){
+    curPassInput.value = ''; newPassInput.value = '';
+    pwErr.classList.add('hide');
+    editPwForm.classList.remove('hide');
+    curPassInput.focus();
+  };
+  $('cancelEditPassword').onclick = function(){ editPwForm.classList.add('hide'); };
+  editPwForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    pwErr.classList.add('hide');
+    var cur = curPassInput.value, next = newPassInput.value;
+    if(!cur || !next){ pwErr.textContent = 'Please fill in both fields.'; pwErr.classList.remove('hide'); return; }
+    if(next.length < 6){ pwErr.textContent = 'New password should be at least 6 characters.'; pwErr.classList.remove('hide'); return; }
+    var submitBtn = editPwForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    window.KAuth.changePassword(cur, next).then(function(){
+      submitBtn.disabled = false;
+      editPwForm.classList.add('hide');
+      showToast('Password updated.');
+    }).catch(function(err){
+      submitBtn.disabled = false;
+      pwErr.textContent = ERR_MSGS[err && err.code] || 'Something went wrong — please try again.';
+      pwErr.classList.remove('hide');
+    });
+  });
+
+  // ---- delete account ----
+  function closeDelete(){
+    deleteOverlay.classList.remove('on');
+    deletePassInput.value = '';
+    deleteErr.classList.add('hide');
+    deleteBtn.disabled = false;
+  }
+  $('btnOpenDelete').onclick = function(){
+    var isGoogle = window.KAuth && window.KAuth.authProvider() === 'google.com';
+    deletePassWrap.classList.toggle('hide', isGoogle);
+    deleteSub.textContent = isGoogle
+      ? 'This permanently deletes your Klarity account and can’t be undone. You’ll be asked to confirm with Google.'
+      : 'This permanently deletes your Klarity account and can’t be undone.';
+    deleteErr.classList.add('hide');
+    deleteOverlay.classList.add('on');
+  };
+  $('deleteModalClose').onclick = closeDelete;
+  deleteOverlay.addEventListener('click', function(e){ if(e.target === deleteOverlay) closeDelete(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && deleteOverlay.classList.contains('on')) closeDelete();
+  });
+  deleteBtn.onclick = function(){
+    deleteErr.classList.add('hide');
+    deleteBtn.disabled = true;
+    window.KAuth.deleteAccount(deletePassInput.value).then(function(){
+      closeDelete();
+      showToast('Your account has been deleted.');
+      showTab('home');
+    }).catch(function(err){
+      deleteBtn.disabled = false;
+      deleteErr.textContent = ERR_MSGS[err && err.code] || 'Something went wrong — please try again.';
+      deleteErr.classList.remove('hide');
+    });
+  };
+})();
+
+/* ---------- post-signup survey ----------
+   Two "select all that apply" chip questions shown once, right after a
+   brand-new account is created (never on login, never for a returning
+   Google user). Answers are best-effort saved to Firestore — Skip/close
+   works either way, and a save failure (e.g. Firestore not enabled on the
+   project yet) never blocks the person from getting into the app. */
+(function(){
+  var overlay = $('surveyModalOverlay');
+  if(!overlay) return;
+  var heardGroup = $('surveyHeard'), featGroup = $('surveyFeatures');
+  var pendingUid = null;
+
+  function toggleChip(e){
+    var btn = e.target.closest('.chip-check');
+    if(!btn) return;
+    btn.classList.toggle('on');
+  }
+  heardGroup.addEventListener('click', toggleChip);
+  featGroup.addEventListener('click', toggleChip);
+
+  function selected(group){
+    return Array.prototype.slice.call(group.querySelectorAll('.chip-check.on')).map(function(b){ return b.getAttribute('data-val'); });
+  }
+  function reset(){
+    Array.prototype.forEach.call(overlay.querySelectorAll('.chip-check.on'), function(b){ b.classList.remove('on'); });
+  }
+  function close(){ overlay.classList.remove('on'); pendingUid = null; }
+
+  window.openSurveyModal = function(uid){
+    pendingUid = uid;
+    reset();
+    overlay.classList.add('on');
+  };
+
+  $('surveyModalClose').onclick = close;
+  $('surveySkip').onclick = close;
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) close(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && overlay.classList.contains('on')) close();
+  });
+  $('surveySubmit').onclick = function(){
+    var uid = pendingUid;
+    var heard = selected(heardGroup), features = selected(featGroup);
+    close();
+    if(uid && window.KDB && (heard.length || features.length)){
+      window.KDB.saveOnboarding(uid, { heardAbout: heard, excitedFeatures: features }).catch(function(){
+        /* Firestore likely isn't enabled on the project yet — nothing to do about
+           it from here, and it shouldn't interrupt the person's signup either way */
+      });
+    }
   };
 })();
 
@@ -6198,18 +6554,24 @@ $('btnRecheck').onclick=function(){
 
 /* theme toggle: the initial theme is already set by the boot script in
    <head> (light by default, saved choice if returning). This just handles
-   the switch and keeps its ARIA state and localStorage in sync. */
+   the switch(es) — navbar and Settings both have one, kept in sync — and
+   keeps ARIA state and localStorage up to date. */
 (function(){
   var root = document.documentElement;
-  var btn = $('themeBtn');
-  function sync(){ btn.setAttribute('aria-checked', root.getAttribute('data-theme')==='dark' ? 'true' : 'false'); }
+  var btns = document.querySelectorAll('.theme-switch');
+  function sync(){
+    var checked = root.getAttribute('data-theme')==='dark' ? 'true' : 'false';
+    Array.prototype.forEach.call(btns, function(b){ b.setAttribute('aria-checked', checked); });
+  }
   sync();
-  btn.onclick = function(){
-    var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    try{ localStorage.setItem('klarity.theme', next); }catch(e){}
-    sync();
-  };
+  Array.prototype.forEach.call(btns, function(b){
+    b.onclick = function(){
+      var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try{ localStorage.setItem('klarity.theme', next); }catch(e){}
+      sync();
+    };
+  });
 })();
 
 upd(); updh(); refreshEngine();

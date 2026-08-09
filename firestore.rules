@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Post-signup survey answers: a user may only write their own doc,
+    // and no one can read them back from the client — this is
+    // write-only telemetry, read via the Firebase console instead.
+    match /onboarding/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow read, delete: if false;
+    }
+  }
+}
