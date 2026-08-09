@@ -4571,6 +4571,14 @@ function pcLoadVoices(){
   });
 }
 function pcEnglishVoices(){
+  // Re-fetch fresh every time rather than trusting the cached array: some
+  // browsers silently ignore utterance.voice if the object isn't a live
+  // reference from the *current* getVoices() call, quietly falling back to
+  // one default voice for the language — which is exactly why two distinct
+  // voices that preview correctly can end up sounding identical once actual
+  // playback starts. Only fall back to the cache if a fresh call is briefly empty.
+  var fresh = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  if(fresh.length) pcVoicesCache = fresh;
   var v = pcVoicesCache.filter(function(x){ return /^en/i.test(x.lang); });
   return v.length ? v : pcVoicesCache; // fall back to whatever exists if no English voice is installed
 }
