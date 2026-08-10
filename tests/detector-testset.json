@@ -70,5 +70,181 @@
     "label": 0,
     "genre": "human (short, personal)",
     "text": "Honestly I just wing it most days. I write down like three things I need to do and ignore the rest until they're on fire. Somehow it works out more than it should. My mom thinks I need a planner. I've bought four planners."
+  },
+  {
+    "id": "ai-11-business-formal",
+    "label": 1,
+    "genre": "AI (formal business essay)",
+    "fullPipelineDocP": 98,
+    "text": "The rapid advancement of artificial intelligence has fundamentally transformed numerous industries, revolutionizing the way businesses operate and interact with consumers. Furthermore, it is important to note that these technological innovations have significantly enhanced productivity and efficiency across various sectors. Moreover, the implementation of AI-driven solutions has enabled organizations to streamline their operations, ultimately leading to substantial cost savings and improved outcomes. In conclusion, the integration of artificial intelligence represents a pivotal shift in modern business practices, offering unprecedented opportunities for growth and innovation. It is essential to understand that this transformation extends beyond mere automation; it encompasses a comprehensive reimagining of how organizations leverage data and insights to drive strategic decision-making. Consequently, businesses that fail to adapt to this new paradigm risk falling behind their more technologically progressive competitors. Additionally, the seamless integration of machine learning algorithms has enabled unprecedented levels of personalization, thereby enhancing customer satisfaction and loyalty across diverse market segments. In today's rapidly evolving digital landscape, organizations must prioritize continuous innovation to maintain their competitive edge and ensure long-term sustainability. By embracing these technological advancements, companies can unlock new avenues for growth while simultaneously improving operational resilience in an increasingly complex global marketplace."
+  },
+  {
+    "id": "ai-12-history-essay",
+    "label": 1,
+    "genre": "AI (history essay)",
+    "fullPipelineDocP": 98,
+    "text": "The French Revolution stands as one of the most significant turning points in modern European history, fundamentally reshaping the political and social landscape of the continent. Beginning in 1789, this transformative period was driven by a complex interplay of economic hardship, social inequality, and Enlightenment ideals that had permeated French society. It is crucial to recognize that the revolution did not emerge in isolation; rather, it was the culmination of decades of mounting tension between the privileged aristocracy and an increasingly disenfranchised populace. The storming of the Bastille on July 14, 1789, served as a powerful symbol of popular resistance against royal tyranny, galvanizing revolutionary sentiment throughout the nation. Subsequently, the National Assembly's adoption of the Declaration of the Rights of Man and of the Citizen articulated fundamental principles of liberty, equality, and fraternity that would go on to influence democratic movements worldwide. However, the revolution's trajectory grew increasingly radical, culminating in the Reign of Terror under Robespierre's leadership, during which thousands were executed in the name of revolutionary purity. Ultimately, the rise of Napoleon Bonaparte marked both the consolidation and the eventual betrayal of many revolutionary ideals, illustrating the complex and often contradictory legacy of this pivotal historical epoch."
+  },
+  {
+    "id": "ai-13-casual-blog",
+    "label": 1,
+    "genre": "AI (casual blog style)",
+    "fullPipelineDocP": 98,
+    "text": "So you're thinking about getting into indoor plants, huh? That's awesome! Let me tell you, it's honestly one of the best decisions you can make for your living space. Not only do plants add a beautiful aesthetic touch to any room, but they also offer numerous health benefits that many people don't even realize. First and foremost, plants are natural air purifiers. They absorb carbon dioxide and release oxygen, which can significantly improve the air quality in your home. Additionally, certain plants like snake plants and peace lilies are particularly effective at filtering out harmful toxins from the air. When it comes to choosing the right plants for beginners, it's important to start with low-maintenance varieties that can tolerate a bit of neglect. Succulents and pothos are fantastic options because they don't require frequent watering and can thrive in a variety of lighting conditions. It's also worth noting that overwatering is one of the most common mistakes new plant owners make. Remember, it's always better to underwater than overwater, as most houseplants are more resilient to drought than to root rot. With a little patience and consistency, you'll find that plant care becomes second nature, and your indoor garden will flourish beautifully over time."
+  },
+  {
+    "id": "ai-14-science-explainer",
+    "label": 1,
+    "genre": "AI (science explainer)",
+    "fullPipelineDocP": 97,
+    "text": "Photosynthesis represents one of the most remarkable biochemical processes in the natural world, serving as the fundamental mechanism through which plants convert light energy into chemical energy. This intricate process occurs primarily within the chloroplasts of plant cells, where the green pigment chlorophyll plays a crucial role in capturing sunlight. The overall process can be divided into two distinct stages: the light-dependent reactions and the light-independent reactions, commonly known as the Calvin cycle. During the light-dependent reactions, which take place in the thylakoid membranes, light energy is absorbed and used to split water molecules, releasing oxygen as a byproduct while generating ATP and NADPH. These energy-rich molecules subsequently power the Calvin cycle, which occurs in the stroma of the chloroplast, where carbon dioxide is fixed and converted into glucose through a series of enzymatic reactions. It is worth noting that this process is not merely important for the individual plant; rather, it forms the foundational basis for nearly all life on Earth, as it produces the oxygen we breathe and serves as the primary source of energy input for most ecosystems. Understanding photosynthesis is therefore essential for comprehending broader ecological and environmental systems, particularly in the context of climate change and carbon cycling."
+  },
+  {
+    "id": "ai-15-persuasive-essay",
+    "label": 1,
+    "genre": "AI (persuasive essay)",
+    "fullPipelineDocP": 98,
+    "text": "In an era defined by rapid technological change and increasing environmental awareness, it has become abundantly clear that renewable energy sources must play a central role in shaping our collective future. The transition away from fossil fuels is not merely a matter of environmental preference; it is an urgent necessity that demands immediate and sustained action. First and foremost, the scientific consensus regarding climate change is unequivocal, with overwhelming evidence pointing to the detrimental effects of continued reliance on carbon-intensive energy sources. Furthermore, the economic case for renewable energy has never been stronger, as the cost of solar and wind technologies has plummeted dramatically over the past decade, making them increasingly competitive with traditional energy sources. It is also important to consider the substantial job creation potential inherent in the renewable energy sector, which offers opportunities for economic growth alongside environmental stewardship. Critics often argue that renewable energy infrastructure requires significant upfront investment; however, this perspective fails to account for the long-term cost savings and environmental benefits that far outweigh initial expenditures. Ultimately, embracing renewable energy is not simply an environmental imperative but a strategic economic opportunity that will define the prosperity and sustainability of nations in the decades to come."
+  },
+  {
+    "id": "ai-16-technical-explainer",
+    "label": 1,
+    "genre": "AI (technical explainer)",
+    "fullPipelineDocP": 97,
+    "text": "Understanding how application programming interfaces, commonly referred to as APIs, function is essential for anyone looking to build modern software applications. At its core, an API serves as an intermediary that allows different software systems to communicate with one another, enabling data exchange and functionality sharing without requiring direct access to each other's internal code. This abstraction layer is particularly valuable because it allows developers to build upon existing services without needing to understand their underlying implementation details. When a client application sends a request to an API, that request typically includes specific parameters that define what data or action is being requested. The server then processes this request and returns a response, often formatted in JSON or XML, containing the requested information or confirmation of the requested action. RESTful APIs, which have become the industry standard, adhere to a set of architectural principles that emphasize statelessness and resource-based interactions. Additionally, proper API design requires careful consideration of authentication mechanisms, rate limiting, and error handling to ensure both security and reliability. It is also worth noting that comprehensive documentation plays a critical role in API adoption, as developers rely heavily on clear examples and specifications to integrate these services effectively into their own applications."
+  },
+  {
+    "id": "ai-17-research-summary",
+    "label": 1,
+    "genre": "AI (research summary)",
+    "fullPipelineDocP": 98,
+    "text": "Recent studies examining the relationship between sleep quality and cognitive performance have yielded significant insights into the underlying mechanisms that govern memory consolidation and executive function. Researchers have consistently found that inadequate sleep duration correlates strongly with diminished attention span, impaired decision-making capabilities, and reduced emotional regulation. It is important to note that these effects are not merely subjective observations; rather, they are supported by extensive neuroimaging data that demonstrates measurable changes in prefrontal cortex activity following periods of sleep deprivation. Furthermore, the role of rapid eye movement, or REM, sleep in facilitating memory consolidation has become an area of particular interest among cognitive scientists. During this sleep stage, the brain appears to actively process and integrate newly acquired information, transferring it from short-term to long-term memory storage. Additionally, research has revealed that chronic sleep deprivation may contribute to long-term neurological consequences, including an increased risk of neurodegenerative conditions. These findings underscore the critical importance of prioritizing adequate sleep hygiene, not only for immediate cognitive performance but also for long-term brain health. Consequently, public health initiatives should place greater emphasis on educating individuals about the substantial benefits of consistent, high-quality sleep patterns."
+  },
+  {
+    "id": "ai-18-professional-email",
+    "label": 1,
+    "genre": "AI (professional email)",
+    "fullPipelineDocP": 98,
+    "text": "I hope this message finds you well. I wanted to reach out regarding the upcoming project timeline and provide an update on our current progress. As you may already be aware, our team has been working diligently to ensure that all deliverables are completed within the established deadlines. I am pleased to report that we have made significant strides in several key areas, particularly with respect to the initial design phase, which is now substantially complete. However, it is important to note that we have encountered a few unforeseen challenges that may impact our overall timeline. Specifically, the integration process has proven to be more complex than initially anticipated, requiring additional resources and coordination between departments. In light of these developments, I would like to propose a brief meeting to discuss potential adjustments to our project roadmap and to ensure that all stakeholders remain aligned on our objectives. Furthermore, I believe it would be beneficial to establish more frequent check-ins moving forward, as this will allow us to proactively address any emerging issues before they escalate into more significant obstacles. Please let me know your availability for the coming week, and I look forward to discussing this matter further at your earliest convenience."
+  },
+  {
+    "id": "ai-19-qa-explainer",
+    "label": 1,
+    "genre": "AI (Q&A explainer)",
+    "fullPipelineDocP": 97,
+    "text": "Understanding the difference between weather and climate is fundamental to grasping broader environmental science concepts. Weather refers to short-term atmospheric conditions in a specific location, encompassing factors such as temperature, precipitation, humidity, and wind patterns over a period of hours or days. Climate, on the other hand, describes the long-term patterns and averages of weather conditions in a particular region, typically measured over a period of thirty years or more. It is important to recognize that a single unusually cold day does not disprove the broader trend of global warming, just as a single unusually hot day does not necessarily confirm it. Rather, climate scientists analyze extensive datasets spanning decades to identify meaningful trends and patterns. Furthermore, climate is influenced by a complex array of factors, including ocean currents, atmospheric circulation patterns, solar radiation, and geographic features such as mountain ranges and bodies of water. Additionally, human activities, particularly the burning of fossil fuels, have significantly altered the composition of the atmosphere, leading to an enhanced greenhouse effect and subsequent global temperature increases. This distinction between weather and climate is essential for interpreting scientific data accurately and for engaging in informed discussions about environmental policy and climate change mitigation strategies."
+  },
+  {
+    "id": "ai-20-generic-academic",
+    "label": 1,
+    "genre": "AI (generic academic)",
+    "fullPipelineDocP": 98,
+    "text": "Effective time management is a critical skill that significantly influences academic and professional success. In today's fast-paced world, individuals are often confronted with numerous competing responsibilities, making it essential to develop strategies that optimize productivity while minimizing stress. One of the most effective approaches to time management involves prioritization, whereby tasks are categorized based on their urgency and importance. This method allows individuals to focus their energy on high-impact activities rather than becoming overwhelmed by less consequential tasks. Furthermore, it is important to recognize the value of breaking larger projects into smaller, more manageable components, as this approach can significantly reduce feelings of being overwhelmed while providing a clearer sense of progress. Additionally, the implementation of structured scheduling techniques, such as time-blocking, has been shown to enhance focus and reduce the cognitive burden associated with constant task-switching. It is also worth noting that adequate rest and recovery periods play an equally important role in sustaining long-term productivity, as chronic overwork often leads to diminished returns and burnout. Ultimately, mastering time management is not simply about doing more in less time; rather, it involves making deliberate choices about how to allocate one's limited time and energy in alignment with one's broader goals and values."
+  },
+  {
+    "id": "human-09-casual-opinion-2",
+    "label": 0,
+    "genre": "human (casual opinion, false positive at full pipeline)",
+    "fullPipelineDocP": 71,
+    "note": "MEASURED FALSE POSITIVE — flagged as 71% AI by the full pipeline (transformer 71%, tmr sub-model alone 94%). Investigated: five additional casual/informal human samples (cas-01..cas-05 below) all scored correctly (9-31%), so this appears to be an isolated outlier rather than a systematic weakness of casual/informal text. Kept in the set deliberately, unfixed, as an honest known failure case rather than removed to inflate the measured accuracy.",
+    "text": "honestly i don't get why people are so obsessed with pumpkin spice lattes every fall, like i tried one last week and it just tasted like someone dumped cinnamon into hot milk and called it a day. my roommate practically lost her mind when i said that though, she's been getting one every single day since september which is insane to me both financially and just like... taste wise? i mean i get it, fall vibes and cozy sweaters and all that, but i'd rather just have a normal coffee and save the six bucks. anyway we ended up arguing about it for like twenty minutes in the kitchen which honestly was kind of funny because neither of us actually cared that much, we were just bored and it was raining outside so there wasn't much else to do. she did make a decent point that it's not really about the taste, it's more about the whole seasonal ritual thing, like buying the same drink every year is kind of comforting in a weird way. i still think it's overpriced but i'll admit i might try the caramel one next time just to see what the fuss is about, don't tell her i said that though she'll never let me live it down."
+  },
+  {
+    "id": "human-10-dense-encyclopedic-2",
+    "label": 0,
+    "genre": "human (dense encyclopedic)",
+    "fullPipelineDocP": 20,
+    "text": "The Byzantine Empire, often referred to as the Eastern Roman Empire, persisted for over a millennium after the fall of Rome in 476 CE, maintaining a complex administrative apparatus centered in Constantinople. Its legal tradition, codified under Justinian I in the sixth century, drew heavily on earlier Roman precedent while incorporating Christian doctrine into civil law, a synthesis that would later influence legal systems across medieval Europe. Trade networks extended from the Baltic to the Silk Road, with Constantinople serving as a critical entrepot between East and West; silk, spices, and precious metals passed through its markets, generating substantial tax revenue for the imperial treasury. Military organization relied on the theme system, whereby soldiers were granted land in exchange for hereditary service, a structure that provided both defense and agricultural stability across frontier provinces. Religious controversy, particularly the Iconoclast disputes of the eighth and ninth centuries, repeatedly strained relations between the imperial court and the papacy, contributing to the eventual schism between Eastern Orthodoxy and Roman Catholicism in 1054. The empire's decline was gradual rather than sudden, marked by the loss of Anatolian territory following the Battle of Manzikert in 1071 and further weakened by the Fourth Crusade's sack of Constantinople in 1204, before its final conquest by Ottoman forces in 1453."
+  },
+  {
+    "id": "human-11-esl-student-2",
+    "label": 0,
+    "genre": "human (ESL student)",
+    "fullPipelineDocP": 1,
+    "text": "In my country, the education system is very different from here. When I was young, we must wake up very early, like 5 in morning, because school start at 7 and take bus is very long, almost one hour sometime. Teacher in my school is very strict, if you not do homework they will call your parent immediately, not like give warning first. I remember one time I forget my math homework and teacher make me stand outside classroom for whole class, I was so embarrassed because all my friend can see me through window. But now when I think about it, I understand why they do this, because they want us to learn discipline and respect for study. Here in America, I notice teacher are more friendly and they explain more why homework is important instead of just punish you. Also here we can ask question anytime in class but in my country if you ask too many question sometimes teacher think you are not listening properly. I still adjusting to this different style, sometimes I forget I can raise my hand and ask, I just stay quiet like before. My English teacher here she very patient with me and help me understand better how to write essay, this is why I improve a lot this semester."
+  },
+  {
+    "id": "human-12-technical-notes-2",
+    "label": 0,
+    "genre": "human (technical notes)",
+    "fullPipelineDocP": 4,
+    "text": "Debugging the auth flow today, turns out the token refresh was firing twice on page load because both the AuthProvider and the axios interceptor were independently checking expiry. Fixed by moving the refresh logic into a single source of truth (the interceptor) and having AuthProvider just subscribe to state changes instead of triggering its own check. Also noticed the refresh token wasn't being rotated properly on the backend - we were reusing the same one indefinitely which is a security issue, added rotation so each refresh invalidates the old token. Still need to handle the race condition where two requests hit a 401 at the same time and both try to refresh simultaneously, right now this causes one of them to fail because the token gets invalidated mid-flight. Plan is to queue up requests that fail with 401 while a refresh is already in progress, then retry them once the new token comes back instead of letting each one independently kick off its own refresh. Tested this locally with throttled network to simulate slow refresh and it mostly works but there's still an edge case when the refresh itself fails (e.g. refresh token expired) - need to make sure that properly logs the user out instead of retrying forever."
+  },
+  {
+    "id": "human-13-creative-narrative-2",
+    "label": 0,
+    "genre": "human (creative narrative)",
+    "fullPipelineDocP": 26,
+    "text": "The rain hadn't stopped in three days, and Marta had started to believe it never would. She stood at the kitchen window, watching water pool in the dip where the garden path used to be, and thought about her grandmother's stories of the flood that took the old mill. Nobody believed those stories anymore, not really, they were just something you told kids to make the rain feel less ordinary. Behind her, the kettle clicked off, and she poured water over the same tea bag she'd used twice already because the shop hadn't been restocked since the roads went under. Her phone buzzed on the counter, a message from her sister asking if she'd heard from their father, and Marta typed no before deleting it and writing not yet instead, because no felt too final somehow. She'd always thought disasters would feel dramatic, full of sirens and shouting, but this just felt like waiting, like the whole town had collectively decided to hold its breath. Down the hall, she could hear her son moving his toy trucks across the floor, making small explosion noises that had nothing to do with the actual quiet catastrophe unfolding outside. She wondered, not for the first time, what he would remember about this when he was grown."
+  },
+  {
+    "id": "human-14-strong-student-essay-2",
+    "label": 0,
+    "genre": "human (strong student essay)",
+    "fullPipelineDocP": 2,
+    "text": "Toni Morrison's Beloved resists easy categorization as either ghost story or historical fiction, and I'd argue that resistance is the point. The novel refuses to let trauma stay in the past tense; Sethe's memories aren't flashbacks so much as intrusions, moments where 1873 and the plantation years collapse into each other without warning. This structural choice mirrors what Morrison seems to be arguing about slavery's afterlife: that it doesn't end when the physical bondage does, that a mother can be legally free and still not own her own mind. What struck me most on a second read was how the haunting works on multiple levels at once. Beloved is literally a ghost, but she's also every unspoken thing the characters can't bring themselves to say to each other, and she's also, uncomfortably, the reader's own difficulty sitting with the book's central act of violence. Morrison doesn't explain Sethe's decision in a way that resolves it into something we can comfortably judge; she makes us understand it enough that judgment becomes complicated, which I think is a harder and more honest thing for a novel to do than simply condemning or excusing. The prose itself resists resolution too, circling back to the same events from different angles instead of moving forward in a straight line, which took me a while to get used to but eventually felt essential rather than difficult for its own sake."
+  },
+  {
+    "id": "human-15-weak-student-essay-2",
+    "label": 0,
+    "genre": "human (weaker student essay)",
+    "fullPipelineDocP": 1,
+    "text": "The book Of Mice and Men is about two guys named George and Lennie who travel together and want to buy a farm one day. Lennie is really strong but he doesn't understand his own strength and he likes to pet soft things like rabbits and mice but he accidentally kills them because he doesn't know how strong he is. George takes care of Lennie because Lennie can't really take care of himself, he forgets things a lot and George has to keep reminding him about their dream of the farm. I think the book is sad because in the end George has to shoot Lennie because Lennie accidentally killed Curley's wife and everyone was going to come after him with guns and it would have been worse if the mob got him. This shows that George really loved Lennie even though it doesn't seem like it because he did the hardest thing to protect him from suffering more. The farm dream represents like the American Dream and how its hard for poor workers during the great depression to actually get their own land and be independent. I think Steinbeck wanted to show how loneliness affects people especially during this time period when everyone was moving around looking for work and didnt have real connections with people."
+  },
+  {
+    "id": "human-16-reddit-discussion",
+    "label": 0,
+    "genre": "human (forum/Reddit-style)",
+    "fullPipelineDocP": 10,
+    "text": "ok so I've been lurking on this sub for a while but finally have to ask because I'm losing my mind a little. bought a used car three weeks ago, passed inspection, mechanic friend even looked it over and said it was fine. yesterday it just... died. like completely dead, wouldn't even turn over, in the middle of a parking lot which thank god wasn't in traffic. had it towed to a shop and they're saying it's the alternator AND the battery, which is weird because wouldn't a dying alternator usually give some warning signs first? dash lights flickering or something? there was nothing, it just went from fine to completely dead in like 30 seconds while I was literally driving it. previous owner swears up and down they never had electrical issues and honestly I believe them because they seemed like a genuinely nice person, not trying to scam me. anyway the shop quoted me $600 for both parts plus labor which feels like a lot but I genuinely don't know if that's reasonable or if I'm getting ripped off. has anyone dealt with sudden total electrical failure like this before? trying to figure out if this is just bad luck or if I should be worried there's something else going on that they're not catching."
+  },
+  {
+    "id": "human-17-professional-natural",
+    "label": 0,
+    "genre": "human (professional but natural)",
+    "fullPipelineDocP": 19,
+    "text": "Quick update on the vendor situation - I spoke with their account manager this morning and they've agreed to extend our contract terms by another 90 days at the current rate, which buys us some breathing room while procurement finishes the RFP process. They did push back on the volume discount we asked for, said it's not something they can approve without their regional director signing off, so that's probably a separate conversation for next quarter. I also flagged the delivery delays from last month and they admitted it was a warehouse staffing issue on their end, not a supply problem, which is at least good to know going forward. Not sure it fully explains why we weren't notified in advance though, I brought that up and they said they'd look into their internal escalation process. For now I think we're fine to keep working with them short term, but I'd suggest we treat the RFP as a real evaluation and not just a formality, especially if pricing doesn't improve. Let me know if you want me on the call when procurement circles back, happy to give context on what we've already tried."
+  },
+  {
+    "id": "human-18-short-review",
+    "label": 0,
+    "genre": "human (short opinionated review)",
+    "fullPipelineDocP": 3,
+    "text": "went into this restaurant with pretty low expectations honestly because the outside looks kind of rundown and the reviews were mixed, but wow I was wrong. the pasta was genuinely one of the best things I've had in this city, and I've eaten at a lot of the fancier spots downtown that charge twice as much. service was a little slow, our waiter seemed like he was covering way more tables than he should've been, but he was apologetic about it and comped our appetizer without us even asking which I appreciated. the portion sizes are honestly kind of small for the price which is my main complaint, I left still a little hungry even after two courses. would still recommend it to people though, especially if you're not going in starving and just want a genuinely good meal without the pretentiousness of some of the other Italian places around here. probably won't be a weekly spot for me just because of the price and portions but definitely earned a spot on my occasional treat-myself list, and I'm already thinking about what I'd order next time which says something."
+  },
+  {
+    "id": "human-19-casual-apartment",
+    "label": 0,
+    "genre": "human (casual, informal register stress test)",
+    "fullPipelineDocP": 31,
+    "text": "okay so update on the apartment situation because i know some of you were asking. landlord finally called back after like a week of me leaving voicemails and turns out he just forgot, not ignoring me on purpose which is honestly a relief because i was starting to spiral a little. anyway he said the leak in the bathroom ceiling is from the unit above us and he's sending someone thursday to look at it, fingers crossed it actually happens because last time he said someone was coming they just... didn't show up and never called to explain. my roommate wants to just fix it ourselves at this point but i keep telling her that's a terrible idea because if we mess with it and make it worse we're the ones who'll get blamed and probably charged for it. we'll see i guess. also completely unrelated but the guy in 4B keeps leaving his bike in the hallway and it's driving me insane, like there's literally a bike rack outside, use it."
+  },
+  {
+    "id": "human-20-casual-workshift",
+    "label": 0,
+    "genre": "human (casual, informal register stress test)",
+    "fullPipelineDocP": 9,
+    "text": "not to be dramatic but today was actually one of the worst shifts i've had in months. we were down two people because someone called out sick last minute, and then the register system crashed for like 40 minutes during the lunch rush which meant i had to write everything down by hand and calculate totals in my head like it's 1995. customers were NOT understanding about it either, one guy full on yelled at me like i personally broke the system on purpose to ruin his day. my manager didn't even come help, she just stayed in the back doing inventory the whole time which honestly still annoys me thinking about it now. i get that inventory needs to get done but come on, priorities. anyway i'm home now, ordered myself some food because i genuinely do not have it in me to cook, and i'm just gonna watch something mindless until i fall asleep. tomorrow better be better because i don't think i can do that again."
+  },
+  {
+    "id": "human-21-casual-cat",
+    "label": 0,
+    "genre": "human (casual, informal register stress test)",
+    "fullPipelineDocP": 12,
+    "text": "lol so my cat has apparently decided that 3am is the optimal time for zoomies and i am not okay. like i understand cats are nocturnal-ish but does it have to be full sprint down the hallway, knock something off the shelf, meow like the house is on fire kind of energy every single night? i've tried playing with her more before bed, tried feeding her later, tried literally everything the internet told me to try and nothing works. my partner sleeps through all of it somehow which honestly feels unfair, i'm the one getting woken up every night while he's just peacefully unbothered next to me. we're thinking about getting her a second cat as company because apparently bored cats do this more, but also getting a second cat feels like it might just mean two cats doing zoomies instead of one, so i'm not sure that solves anything. if anyone has actually fixed this problem before please tell me your secrets because i am running on like 4 hours of sleep at this point and it's starting to affect my work."
+  },
+  {
+    "id": "human-22-casual-show-review",
+    "label": 0,
+    "genre": "human (casual, informal register stress test)",
+    "fullPipelineDocP": 28,
+    "text": "so i finally watched that show everyone's been talking about and honestly? mixed feelings. the first three episodes hooked me immediately, like genuinely couldn't stop watching, the pacing was great and the characters felt real in a way a lot of shows don't manage. but then somewhere around episode 6 it just kind of lost me, felt like they were stretching the plot out longer than it needed to be, adding side stories that didn't really go anywhere. my friend who recommended it says it gets good again by the finale but i'm honestly not sure i have the patience to push through a few more mediocre episodes just to get there. maybe i'll take a break and come back to it later instead of forcing myself through it now. it's frustrating because the bones of a really good show are clearly there, the actors are doing great work, i just think whoever's writing it got a little lost in the middle stretch. anyway curious if anyone else felt the same way or if it's just me."
+  },
+  {
+    "id": "human-23-casual-furniture",
+    "label": 0,
+    "genre": "human (casual, informal register stress test)",
+    "fullPipelineDocP": 13,
+    "text": "quick vent because i need to get this out somewhere. spent literally three hours today trying to assemble this dresser from the furniture store and the instructions were absolute garbage, like pictures with no words and half the steps skipped entirely. got to step 9 and realized i'd put a panel on backwards from like step 3, had to take the whole thing apart again which was its own nightmare because i'd already screwed everything in tight. at one point i genuinely considered just returning the whole box and buying something pre-assembled even though it costs way more, that's how close i was to giving up. finally got it together though and it looks fine now, definitely doesn't look like it took three hours and nearly broke my sanity. going to have a very stiff drink and lie on the floor for a while before i even think about unpacking anything else today."
   }
 ]

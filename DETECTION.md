@@ -98,15 +98,48 @@ robustness and explainability *alongside* the transformer signal, not to
 replace it. If it ever scored highly *on its own*, that would actually be a
 red flag that it had drifted toward keying on something spurious.
 
-**What this project has not done, and cannot honestly claim:** a
+**Full-pipeline (transformer + statistical + stylometric) manual evaluation,
+2026-08-09:** `tests/detector-testset.json` now holds 37 items — the original
+12, plus 25 more (10 AI, 15 human, including 5 written specifically to stress
+casual/informal register: text-speak, forum posts, rant-y first-person). The
+25 new items carry a `fullPipelineDocP` field recorded from a real run of
+`analyzeLocal()` — the actual client-side pipeline a user gets — in a live
+browser with both transformer models loaded, not the statistical layer alone.
+
+Result on those 25: **24/25 correct.** 10/10 AI samples caught (100%
+recall), spanning formal business prose, history/science essays, a casual
+blog voice, a professional email, and a Q&A explainer — all scored
+97-98%. 14/15 human samples scored correctly low, across dense encyclopedic
+prose, ESL writing, technical notes, creative fiction, strong and weak
+student essays, forum posts, and five separate casual/informal samples
+written specifically to try to break it (all scored 9-31%, comfortably
+below the AI threshold).
+
+**The one miss, kept in the set rather than quietly dropped:**
+`human-09-casual-opinion-2`, a casual first-person opinion piece, scored 71%
+AI (`tmr-ai-text-detector` alone said 94%; `e5-small-lora` correctly said
+~0%, but it only carries 25% of the blend weight — see `scoreMany()` in
+index.html for the exact 75/25 linear combination). Investigated rather than
+patched: five more casual/informal samples covering the same register were
+added and all scored correctly, so this reads as an isolated model error on
+this specific passage, not a systematic weakness of informal writing that a
+weight change would reliably fix. Changing the 75/25 blend to chase a single
+failing example risks degrading the 24 cases that are currently correct —
+that tradeoff was not made without more evidence than one document.
+
+**What this project has still not done, and cannot honestly claim:** a
 large-scale ROC-AUC/precision-recall study across thousands of documents,
 multiple genres, and multiple AI models; adversarial testing against
-several live AI systems' outputs; or cross-session authorship-consistency
-comparison (would require accounts and a stored corpus of prior writing,
-which this project has neither). If you need those numbers, they require a
-labeled corpus this project doesn't have — the honest thing to do here was
-build the infrastructure (the eval harness, the test set format) rather
-than fabricate the results.
+several live AI systems' outputs; a direct head-to-head comparison against
+commercial detectors (Turnitin, GPTZero, etc.) — those companies don't
+publish comparable methodology or give free bulk API access, so any claim
+of parity with them would be unverifiable marketing, not a measurement;
+or cross-session authorship-consistency comparison (would require accounts
+and a stored corpus of prior writing, which this project has neither). If
+you need those numbers, they require a labeled corpus this project doesn't
+have — the honest thing to do here was build the infrastructure (the eval
+harness, the test set format, and now a real 37-item labeled set with
+recorded full-pipeline results) rather than fabricate the results.
 
 ## Never claim 100%
 
