@@ -328,6 +328,16 @@ textarea.dragover{border-color:var(--accent); box-shadow:0 0 0 3.5px var(--accen
 .seg.para{background:var(--para-soft); box-shadow:inset 0 -2px 0 var(--para-line)}
 .seg.ai:hover,.seg.para:hover{filter:brightness(1.12); cursor:help}
 
+/* Custom tooltip for hovering/tapping a flagged .seg — a plain title=""
+   attribute relies on the browser's native tooltip, which has a ~1s delay,
+   isn't themeable, and never appears at all on touch devices. This shows
+   instantly on hover and responds to tap on mobile instead. */
+.seg-tooltip{position:fixed; z-index:260; max-width:280px; background:var(--tx); color:var(--bg);
+  font-size:12px; line-height:1.5; font-weight:500; padding:8px 11px; border-radius:var(--r-sm);
+  box-shadow:var(--sh-lg); opacity:0; transform:translateY(4px); pointer-events:none;
+  transition:opacity .12s ease, transform .12s ease}
+.seg-tooltip.on{opacity:1; transform:translateY(0)}
+
 .flaglist{max-height:330px; overflow:auto; display:grid; gap:8px}
 .flagitem{border-left:2.5px solid var(--ai); background:var(--surface-2); border-radius:0 var(--r-sm) var(--r-sm) 0;
   padding:10px 12px; font-size:12.75px; line-height:1.55}
@@ -1742,7 +1752,7 @@ window.dispatchEvent(new Event('kauth-ready'));
           <span><i style="background:var(--line-strong)"></i>Human&#8209;written</span>
         </div>
         <div id="report"></div>
-        <p class="mini" style="margin-top:11px">Hover a highlighted sentence for its score and the signals behind it.</p>
+        <p class="mini" style="margin-top:11px">Hover (or tap, on mobile) a highlighted sentence for its score and the signals behind it.</p>
       </div>
     </div>
   </div>
@@ -2054,6 +2064,7 @@ window.dispatchEvent(new Event('kauth-ready'));
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="segTooltip" class="seg-tooltip" role="tooltip"></div>
 
 <div class="auth-modal-overlay" id="authModalOverlay" role="presentation">
   <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
@@ -5862,6 +5873,57 @@ function showToast(msg){
   showToast._t = setTimeout(function(){ t.classList.remove('show'); }, 2600);
 }
 
+/* ---------- flagged-segment tooltip ----------
+   Custom tooltip for the Detector's .seg[data-tip] spans — replaces the
+   native title="" attribute, which has a ~1s hover delay, isn't styled to
+   match the app, and never appears at all on touch devices (no hover event
+   exists there). This shows instantly on hover, on keyboard focus (tabindex
+   is set on each span), and toggles on tap for touch/mobile. */
+(function(){
+  var tip = $('segTooltip');
+  var active = null;
+
+  function show(el){
+    var text = el.getAttribute('data-tip');
+    if(!text) return;
+    tip.textContent = text;
+    active = el;
+    // lay it out off-screen first so the width reflects this tip's own
+    // text before we use it to center/clamp the final position
+    tip.style.left = '-9999px'; tip.style.top = '-9999px';
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var r = el.getBoundingClientRect();
+    var x = Math.min(Math.max(8, r.left + r.width/2 - tw/2), window.innerWidth - tw - 8);
+    var y = r.top - th - 10;
+    if(y < 8) y = r.bottom + 10;   // flip below the segment if there's no room above
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+    tip.classList.add('on');
+  }
+  function hide(){
+    tip.classList.remove('on');
+    active = null;
+  }
+  function segOf(e){ return e.target.closest ? e.target.closest('.seg[data-tip]') : null; }
+
+  document.addEventListener('mouseover', function(e){ var el = segOf(e); if(el) show(el); });
+  document.addEventListener('mouseout', function(e){
+    var el = segOf(e);
+    if(el && (!e.relatedTarget || !el.contains(e.relatedTarget))) hide();
+  });
+  document.addEventListener('focusin', function(e){ var el = segOf(e); if(el) show(el); });
+  document.addEventListener('focusout', function(e){ if(segOf(e)) hide(); });
+  // tap-to-toggle — the only way this ever reaches touch devices, since
+  // touchscreens never fire mouseover/mouseout at all
+  document.addEventListener('click', function(e){
+    var el = segOf(e);
+    if(el){ e.stopPropagation(); active === el ? hide() : show(el); return; }
+    if(active) hide();
+  });
+  window.addEventListener('scroll', function(){ if(active) hide(); }, true);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && active) hide(); });
+})();
+
 /* ---------- account system (Firebase Auth) ----------
    window.KAuth is set up by the module script in <head>. Modules load
    asynchronously, so it may not exist yet the instant this script runs —
@@ -6424,7 +6486,7 @@ function renderScan(text, r){
     html += esc(text.slice(prev, it.start));
     var cls = it.p>=0.5 ? (it.para?'seg para':'seg ai') : 'seg';
     var tip = Math.round(it.p*100)+'% AI &mdash; '+it.reasons.slice(0,3).join('; ');
-    html += '<span class="'+cls+'" title="'+esc(tip.replace(/&mdash;/g,'-'))+'">'+esc(text.slice(it.start,it.end))+'</span>';
+    html += '<span class="'+cls+'" data-tip="'+esc(tip.replace(/&mdash;/g,'-'))+'" tabindex="0">'+esc(text.slice(it.start,it.end))+'</span>';
     prev = it.end;
     if(it.p>=0.5) flags.push(it);
   }
