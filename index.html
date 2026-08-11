@@ -1897,6 +1897,8 @@ window.dispatchEvent(new Event('kauth-ready'));
           <label class="chk"><input type="checkbox" id="oPunct" checked><span>Fix robotic punctuation<small>Removes em dashes and semicolon chains</small></span></label>
           <label class="chk"><input type="checkbox" id="oBurst" checked><span>Vary sentence length<small>Splits long sentences, merges short ones</small></span></label>
           <label class="chk"><input type="checkbox" id="oTrans" checked><span>Rewrite formal transitions<small>Furthermore &rarr; Also, However &rarr; But</small></span></label>
+          <label class="chk"><input type="checkbox" id="oPassive" checked><span>Convert passive to active voice<small>&ldquo;was built by the team&rdquo; &rarr; &ldquo;the team built&rdquo;</small></span></label>
+          <label class="chk"><input type="checkbox" id="oOpeners" checked><span>Vary repeated sentence openers<small>Breaks up &ldquo;The X&hellip; The Y&hellip; The Z&hellip;&rdquo; runs</small></span></label>
           <label class="chk"><input type="checkbox" id="oCasual"><span>Add casual markers<small>Occasional &ldquo;Honestly,&rdquo; openers. Adds words &mdash; review first.</small></span></label>
         </div>
       </div>
@@ -3118,9 +3120,103 @@ var TRANSITIONS = [
 var CASUAL = ["Honestly, ","That said, ","Still, ","To be fair, ","Look, ","Of course, ","Then again, ",
               "For the most part, ","Mostly, ","In practice, ","Realistically, ","Broadly, "];
 
+/* Sentence-opener diversifiers — distinct from CASUAL above. These exist to
+   break up "The X... The Y... The Z..." runs, not to add a conversational
+   tone, so they read as structural/transitional rather than chatty. */
+var OPENER_VARY = ["Beyond that, ","On top of this, ","Elsewhere, ","At the same time, ","In turn, ",
+                    "From there, ","Zooming out, ","Beyond this, "];
+/* Generic openers worth diversifying when repeated back-to-back. Proper nouns
+   ("Napoleon... Napoleon...") are deliberately excluded — repeating a subject's
+   actual name is normal writing, not an AI tic. */
+var GENERIC_OPENERS = /^(the|this|these|that|those|it|they)$/i;
+
 /* A sentence already opening with a discourse marker or conjunction must not
    get another one bolted on ("Look, finally, the Industrial Revolution..."). */
-var HAS_OPENER = /^(And|But|So|Also|Still|Plus|Then|Finally|Now|Yet|Look|Honestly|Of course|That said|To be fair|Then again|What's more|On top of that|In the end|For the most part|Mostly|In practice|Realistically|Broadly|Meanwhile|By contrast|Among them|Things like|Because of that|As a result|Likewise|Especially|There,|It )\b/;
+var HAS_OPENER = /^(And|But|So|Also|Still|Plus|Then|Finally|Now|Yet|Look|Honestly|Of course|That said|To be fair|Then again|What's more|On top of that|In the end|For the most part|Mostly|In practice|Realistically|Broadly|Meanwhile|By contrast|Among them|Things like|Because of that|As a result|Likewise|Especially|There,|It |Beyond that|Beyond this|On top of this|Elsewhere|At the same time|In turn|From there|Zooming out)\b/;
+
+/* ---------- passive → active ----------
+   Deliberately narrow: only the two passive shapes that can be flipped
+   without guessing a verb's base form. Everything else is left alone —
+   getting the tense wrong (e.g. "written" -> "wrote" for irregular verbs)
+   would silently change what the sentence says, which matters more here
+   than catching every passive construction. */
+
+/* Common non-agent idioms after "by" ("by the end", "by then") — never a
+   real passive agent, would produce nonsense if promoted to subject. */
+var BY_NOT_AGENT = /^(the end|the time|the way|far|now|then|this point|this time|this stage|comparison|contrast|default|mistake|accident|chance|definition|design|nature|law\b)/i;
+
+/* A captured "agent" containing one of these is almost always two phrases
+   glued together — a real agent noun phrase ("a team of engineers") plus a
+   trailing adverbial the regex had no way to separate ("...by the analysts
+   FOR further review", "...by the researchers IN a leading journal"). "of"
+   and "and" are left out on purpose: those two are how real compound agent
+   phrases are built ("a team of engineers", "Tom and Jerry"). */
+var AGENT_TRAILER_RISK = /\b(for|since|during|until|while|before|after|yesterday|today|tomorrow|recently|earlier|later|last|next|this|that|in|on|at|to|from|with|within|among|between|across|throughout|despite|without|under|over|near|against|beyond|through)\b/i;
+
+/* A multi-word phrase whose first two words are both capitalized reads as a
+   proper name/title ("The Treaty of Versailles") — leave that capitalized
+   when it moves to the object position. Anything else gets lower-cased so
+   it doesn't look like a stray capital mid-sentence. */
+function toObjectCase(np){
+  var w = np.match(/\S+/g)||[];
+  if(w.length>=2 && /^[A-Z]/.test(w[0]) && /^[A-Z]/.test(w[1])) return np;
+  return np.charAt(0).toLowerCase()+np.slice(1);
+}
+function toSubjectCase(np){ return np.charAt(0).toUpperCase()+np.slice(1); }
+
+/* Subject-verb agreement for the promoted agent ("has" vs "have"). A rough
+   heuristic, same spirit as pronounFor() above — not a full parser, just
+   enough to not obviously mismatch on the common cases. */
+var SING_PRONOUN = /^(it|he|she|i|this|that)$/i;
+var PLURAL_PRONOUN = /^(they|we|you|these|those)$/i;
+function agreeHas(agentPhrase){
+  var w = words(agentPhrase);
+  var last = (w[w.length-1]||'').toLowerCase();
+  if(SING_PRONOUN.test(last)) return 'has';
+  if(PLURAL_PRONOUN.test(last)) return 'have';
+  if(/s$/.test(last) && !/(ss|us|is)$/.test(last)) return 'have';
+  return 'has';
+}
+
+/* A "by <agent>" clause built from an object pronoun ("by them", "by her")
+   needs the subject form once that pronoun becomes the sentence's subject —
+   otherwise it reads as "Them has completed the tasks." Only swaps when the
+   whole agent phrase IS the pronoun, not part of a longer phrase. */
+var OBJ_TO_SUBJ_PRONOUN = { them:'they', us:'we', him:'he', her:'she', me:'I', it:'it' };
+function normalizeAgentPronoun(agent){
+  var key = agent.trim().toLowerCase();
+  return OBJ_TO_SUBJ_PRONOUN.hasOwnProperty(key) ? OBJ_TO_SUBJ_PRONOUN[key] : agent;
+}
+
+function tryActive(sent, rand){
+  var m, agent;
+
+  /* "SUBJECT was/were VERB-ed by AGENT." — regular verbs only: the -ed
+     participle already IS the correct simple-past active form, so no
+     lemma lookup is needed. Anchored to the sentence's own end (optional
+     closing quote/paren after the period) so a mid-sentence comma the
+     agent clause doesn't reach just fails the match instead of silently
+     dropping whatever came after it. */
+  m = sent.match(/^([A-Z][^,.!?;:]{2,60}?)\s+(?:was|were)\s+(\w+ed)\s+by\s+([A-Za-z][^,.!?;:]{1,50}?)([.!?]["'”)\]]?)\s*$/);
+  if(m && !BY_NOT_AGENT.test(m[3]) && !AGENT_TRAILER_RISK.test(m[3]) && wordCount(m[1])<=8 && wordCount(m[3])<=6){
+    agent = normalizeAgentPronoun(m[3]);
+    return toSubjectCase(agent) + ' ' + m[2] + ' ' + toObjectCase(m[1]) + m[4];
+  }
+
+  /* "SUBJECT has/have/had been VERB-en by AGENT." — perfect tense keeps the
+     same participle in active voice regardless of regular/irregular
+     ("has been written by" -> "has written"), so this one isn't limited
+     to -ed verbs. "had" doesn't inflect for number, so only has/have need
+     re-agreeing to the new (promoted) subject. */
+  m = sent.match(/^([A-Z][^,.!?;:]{2,60}?)\s+(has|have|had)\s+been\s+(\w+)\s+by\s+([A-Za-z][^,.!?;:]{1,50}?)([.!?]["'”)\]]?)\s*$/i);
+  if(m && !BY_NOT_AGENT.test(m[4]) && !AGENT_TRAILER_RISK.test(m[4]) && wordCount(m[1])<=8 && wordCount(m[4])<=6){
+    agent = normalizeAgentPronoun(m[4]);
+    var helper = /^had$/i.test(m[2]) ? 'had' : agreeHas(agent);
+    return toSubjectCase(agent) + ' ' + helper + ' ' + m[3] + ' ' + toObjectCase(m[1]) + m[5];
+  }
+
+  return null;
+}
 
 /* Verb-ish test used to decide whether a relative clause can safely become
    its own sentence starting with "It". */
@@ -3216,7 +3312,7 @@ function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
 function humanize(text, opt){
   var rand = rng(opt.seed);
-  var edits = 0, stats = {vocab:0,filler:0,contract:0,punct:0,split:0,merge:0,trans:0,casual:0};
+  var edits = 0, stats = {vocab:0,filler:0,contract:0,punct:0,split:0,merge:0,trans:0,casual:0,passive:0,openers:0};
   var out = text;
   var pApply = opt.strength===1 ? 0.55 : (opt.strength===2 ? 0.85 : 1.0);
 
@@ -3277,7 +3373,25 @@ function humanize(text, opt){
     out = out.replace(/,\s*,/g,',').replace(/\s{2,}/g,' ');
   }
 
-  /* 5. contractions */
+  /* 5. passive → active (own sentence pass — needs whole-sentence boundaries,
+     which the burst step below also builds, but this needs to run whether
+     or not burst is on). */
+  if(opt.passive){
+    var pvSegs = splitSentences(out), pvBuf = '', pvPrev = 0;
+    for(var pv=0; pv<pvSegs.length; pv++){
+      pvBuf += out.slice(pvPrev, pvSegs[pv].start);
+      var pvSent = out.slice(pvSegs[pv].start, pvSegs[pv].end);
+      if(rand() <= pApply){
+        var pvConv = tryActive(pvSent, rand);
+        if(pvConv){ pvSent = pvConv; stats.passive++; edits++; }
+      }
+      pvBuf += pvSent;
+      pvPrev = pvSegs[pv].end;
+    }
+    out = pvBuf + out.slice(pvPrev);
+  }
+
+  /* 6. contractions */
   if(opt.contract){
     CONTRACT.forEach(function(c){
       out = out.replace(c[0], function(m){
@@ -3288,7 +3402,7 @@ function humanize(text, opt){
     });
   }
 
-  /* 6. burstiness: split long sentences, merge short ones */
+  /* 7. burstiness: split long sentences, merge short ones */
   if(opt.burst){
     var segs = splitSentences(out), pieces = [], i;
     for(i=0;i<segs.length;i++){
@@ -3315,6 +3429,28 @@ function humanize(text, opt){
         pieces[i].gap = pieces[i+1].gap;
         pieces.splice(i+1,1);
         stats.merge++; edits++;
+      }
+    }
+    // diversify repeated sentence openers ("The X... The Y... The Z...") —
+    // runs before casual markers so the two don't both land on the same
+    // sentence and double up ("Beyond that, honestly, ...")
+    if(opt.openers){
+      var openerUsed = {}, openerLast = -9;
+      for(i=1;i<pieces.length;i++){
+        var w0 = (words(pieces[i].text)[0]||'');
+        var w0prev = (words(pieces[i-1].text)[0]||'');
+        if(!w0 || w0.toLowerCase()!==w0prev.toLowerCase()) continue;   // no repeat, nothing to fix
+        if(!GENERIC_OPENERS.test(w0)) continue;                        // proper-noun repeats are fine
+        if(i - openerLast < 2) continue;                               // never two in a row
+        if(wordCount(pieces[i].text) <= 6) continue;
+        if(HAS_OPENER.test(pieces[i].text)) continue;
+        if(rand() > pApply) continue;
+        var openerPool = OPENER_VARY.filter(function(c){ return !openerUsed[c]; });
+        if(!openerPool.length){ openerUsed = {}; openerPool = OPENER_VARY; }
+        var om = openerPool[Math.floor(rand()*openerPool.length)];
+        openerUsed[om] = 1; openerLast = i;
+        pieces[i].text = om + pieces[i].text.charAt(0).toLowerCase()+pieces[i].text.slice(1);
+        stats.openers++; edits++;
       }
     }
     // casual markers
@@ -6401,7 +6537,7 @@ async function runHumanize(){
     strength: strength,
     vocab: $('oVocab').checked, filler: $('oPhrase').checked, contract: $('oContr').checked,
     punct: $('oPunct').checked, burst: $('oBurst').checked, trans: $('oTrans').checked,
-    casual: $('oCasual').checked
+    casual: $('oCasual').checked, passive: $('oPassive').checked, openers: $('oOpeners').checked
   };
 
   $('btnHum').disabled = true; $('btnReroll').disabled = true;
@@ -6484,7 +6620,7 @@ async function runHumanize(){
 
   /* 3. rewrite each flagged region on its own, best-of-N against the detector */
   var tries = (MODEL_STATE.status==='ready') ? (strength===3 ? 5 : 3) : 1;
-  var totals = {vocab:0,filler:0,contract:0,punct:0,split:0,merge:0,trans:0,casual:0};
+  var totals = {vocab:0,filler:0,contract:0,punct:0,split:0,merge:0,trans:0,casual:0,passive:0,openers:0};
   var totalEdits = 0, rewrittenWords = 0, pieces = [];
 
   for(var r=0;r<regions.length;r++){
@@ -6540,6 +6676,8 @@ async function runHumanize(){
     '<span class="chip">Punctuation <b>'+totals.punct+'</b></span>'+
     '<span class="chip">Split <b>'+totals.split+'</b></span>'+
     '<span class="chip">Transitions <b>'+totals.trans+'</b></span>'+
+    '<span class="chip">Passive &rarr; active <b>'+totals.passive+'</b></span>'+
+    '<span class="chip">Openers varied <b>'+totals.openers+'</b></span>'+
     (MODEL_STATE.status==='ready'
        ? '<span class="chip">Scored by '+MODELS.length+' detector models</span>'
        : '<span class="chip bad-txt">Detector unavailable &mdash; rewrote everything</span>');
