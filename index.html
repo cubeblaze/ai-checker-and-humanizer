@@ -2432,6 +2432,22 @@ function wordCount(s){ return words(s).length; }
    ORIGINAL text (with formatting intact) is still what markdownListicleDensity
    and every other signal reads. Only the transformer's own input is touched. */
 function stripMarkdownForScoring(text){
+  // Fenced code blocks in AI-generated content are often ASCII-art diagrams,
+  // not real code and not prose. Feeding a WASM tokenizer many lines of
+  // "+---+" box-drawing repeated dozens of times isn't just unhelpful for
+  // scoring — confirmed live, it can crash the ONNX runtime outright (a real
+  // submission with two such diagrams reliably threw an opaque WASM error,
+  // silently falling all the way back to the much weaker offline heuristic
+  // engine — the crash was invisible in the UI, it just looked like a bad
+  // score). Drop the fence markers and any line that's mostly symbols; keep
+  // lines that are mostly real words (diagram labels like "Whale Locates
+  // Dense Krill Swarm" are legitimate short prose and stay).
+  text = text.replace(/```[\s\S]*?```/g, function(block){
+    return block.split('\n').filter(function(line){
+      var letters = (line.match(/[A-Za-z]/g)||[]).length;
+      return letters >= 3 && letters > line.length*0.3;
+    }).join('. ');
+  });
   return text
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/\*\*([^*\n]+)\*\*/g, '$1')
@@ -2439,7 +2455,8 @@ function stripMarkdownForScoring(text){
     .replace(/^[ \t]*[-*+]\s+/gm, '')
     .replace(/^[ \t]*\d+\.\s+/gm, '')
     .replace(/\|/g, ' ')
-    .replace(/^-{3,}\s*$/gm, '');
+    .replace(/^[ \t-]{3,}$/gm, '')      // horizontal rules AND stripped table separator rows
+    .replace(/[ \t]{2,}/g, ' ');
 }
 
 function splitParagraphs(text){
