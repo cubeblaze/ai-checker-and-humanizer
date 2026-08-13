@@ -1168,7 +1168,7 @@ window.dispatchEvent(new Event('kauth-ready'));
 
 <div id="engineBar" class="enginebar hide">
   <span id="engineDot" class="dot warn"></span>
-  <span id="engineTxt">Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.</span>
+  <span id="engineTxt">A detector model downloads on your first scan, then stays cached. No key, no account, no setup.</span>
 </div>
 
 <!-- ============ DASHBOARD ============ -->
@@ -1748,7 +1748,6 @@ window.dispatchEvent(new Event('kauth-ready'));
       <div class="card-bd">
         <div class="legend">
           <span><i style="background:var(--ai)"></i>AI&#8209;generated</span>
-          <span><i style="background:var(--para)"></i>AI&#8209;generated + paraphrased</span>
           <span><i style="background:var(--line-strong)"></i>Human&#8209;written</span>
         </div>
         <div id="report"></div>
@@ -3634,11 +3633,13 @@ function diffHTML(a, b){
 }
 
 /* ============================================================
-   DETECTION ENGINE — purpose-built classifiers, in a Web Worker
+   DETECTION ENGINE — purpose-built classifier, in a Web Worker
    ------------------------------------------------------------
-   No API key, no account, no per-scan cost. Two ONNX detector models are
-   downloaded once (~120MB, then cached by the browser) and run locally.
-   Your text never leaves the machine.
+   No API key, no account, no per-scan cost. One ONNX detector model is
+   downloaded once (smaller download than the old two-model pair, exact size
+   not independently verified here — don't restate a number this file never
+   measured) and then cached by the browser; every scan after that runs
+   locally. Your text never leaves the machine.
 
    This used to run chatgpt-detector-roberta + e5-small-lora. Testing against
    text I wrote fresh myself (Claude, unedited — a model this pair was never
@@ -3647,15 +3648,27 @@ function diffHTML(a, b){
    truth — it doesn't detect AI, it detects "sounds like ChatGPT". Blending it
    in dragged the whole ensemble down to 1/6 correct on that fresh set.
 
-   Now: tmr-ai-text-detector (trained on RAID: 11 different generator
+   That became tmr-ai-text-detector (trained on RAID: 11 different generator
    architectures — GPT-2/3/4, ChatGPT, Mistral, MPT, LLaMA-2, Cohere, both base
-   and chat-tuned) does the heavy lifting, blended with e5-small-lora for
-   extra coverage on short/casual text. Measured: 12/14 on the original tuning
-   set, 5/6 on a genuinely fresh held-out set of Claude-written text — versus
-   the old roberta+e5 pair's 1/6 on that same fresh set. Diversity of TRAINING
-   generators, not which single model you're testing against, is what makes a
-   detector generalize to models it has never seen (GPT-5, Gemini, whatever's
-   next) — there's no way to special-case every current model by name.
+   and chat-tuned) blended with e5-small-lora for extra coverage on short/
+   casual text — 12/14 on the original tuning set, 5/6 on a fresh held-out
+   set of Claude-written text.
+
+   As of this rebuild, e5-small-lora is gone and tmr runs alone. On the
+   project's own held-out set, tmr caught 3 of 4 AI samples solo and e5 only
+   1 of 4 — e5 was carrying 25% of the blend weight while contributing less
+   than a quarter of the correct calls, and on the eval-set case it DID get
+   right (a casual human opinion piece tmr wrongly read as 94% AI), its 25%
+   weight only pulled the blend down to 71% — still a miss, just a smaller
+   one. Net effect of blending it in: mostly noise, occasional partial credit.
+   Simplifying to tmr alone trades away that one partial-credit case for a
+   clearer, single, stronger signal — see DETECTION.md for the honest
+   before/after on that specific example.
+
+   Diversity of TRAINING generators, not which single model you're testing
+   against, is what makes a detector generalize to models it has never seen
+   (GPT-5, Gemini, whatever's next) — there's no way to special-case every
+   current model by name.
 
    Everything runs in a worker, off the UI thread, so the page stays live and
    can report progress. The first version scored a 3-sentence sliding window
@@ -3665,8 +3678,7 @@ function diffHTML(a, b){
    ============================================================ */
 
 var MODELS = [
-  { id:'onnx-community/tmr-ai-text-detector-ONNX', name:'tmr-ai-text-detector', hot:false, weight:0.75, aiLabel:'ai' },
-  { id:'onnx-community/e5-small-lora-ai-generated-detector-ONNX', name:'e5-small-lora', hot:true, weight:0.25, aiLabel:'label_1' }
+  { id:'onnx-community/tmr-ai-text-detector-ONNX', name:'tmr-ai-text-detector', hot:false, weight:1.0, aiLabel:'ai' }
 ];
 var MODEL_STATE = { status:'idle', msg:'', pct:0 };   // idle | loading | ready | error
 
@@ -3777,18 +3789,18 @@ function ensureModels(onStatus){
   return MODEL_PROMISE;
 }
 
-/* e5-small-lora runs hot: on the test set its human passages scored 53-80% and
-   its AI passages 64-95%, so blending it in raw pushed everything to a useless
-   mid-range. Recentre it onto its own observed decision point before combining.
-   NOTE: 0.72/0.07 were fitted on the same set used to report accuracy, so
-   treat them as indicative, not independently measured. */
+/* Currently a no-op: the only model left (tmr) has hot:false, so this always
+   returns p unchanged. Kept rather than deleted because it's not dead
+   weight — MODELS/scoreMany still loop generically over N models, so this
+   is exactly what a future "hot" model (one whose raw scores cluster in a
+   narrow band and need recentring onto its own decision point before
+   blending) would need again. Original case: e5-small-lora ran hot — its
+   human passages scored 53-80% and AI passages 64-95%, so blending it in
+   raw pushed everything to a useless mid-range; 0.72/0.07 were fitted on
+   the same set used to report accuracy at the time, so treat them as
+   indicative if this is ever reused, not independently measured. */
 function recentre(model, p){ return model.hot ? sig((p - 0.72)/0.07) : p; }
 
-/* tmr carries 3x the weight of e5: on a held-out set of fresh, unedited Claude
-   text (never used to fit anything), tmr alone caught 3 of 4 AI samples and
-   e5 alone caught 1 of 4, so tmr is doing most of the cross-model work. e5
-   stays in the blend because it independently catches some short/casual AI
-   text that tmr under-scores. */
 async function scoreMany(texts, onProgress){
   if(!texts.length) return [];
   await ensureModels(setStatus);
@@ -3984,16 +3996,14 @@ async function analyzeLocal(text, onStatus){
 
   var w = chunkTexts.map(function(t){ return wordCount(t); });
   var tot = w.reduce(function(a,b){return a+b;},0) || 1;
-  var docP = 0, dPer0 = [], dPer1 = [], chunkPs = [], chunkReliableFlags = [], chunkParaCounts = [];
+  var docP = 0, dPer0 = [], chunkPs = [], chunkReliableFlags = [], chunkParaCounts = [];
   for(i=0;i<scores.length;i++){
     docP += scores[i].mean * w[i]/tot;
-    dPer0.push(scores[i].per[0]); dPer1.push(scores[i].per[1]);
+    dPer0.push(scores[i].per[0]);
     chunkPs.push(clamp(scores[i].mean,0.01,0.99));
     chunkReliableFlags.push(w[i] >= MIN_CHUNK_WORDS);
     chunkParaCounts.push(chunks[i].paras || 1);
   }
-  var modelGap = mean(dPer0.map(function(p0,idx){ return Math.abs(p0-dPer1[idx]); }));
-  var modelsAgree = clamp(1 - modelGap/0.5, 0, 1);
   var reliableChunkFraction = chunkReliableFlags.length ? chunkReliableFlags.filter(Boolean).length/chunkReliableFlags.length : 0;
 
   var ci = 0;
@@ -4008,12 +4018,13 @@ async function analyzeLocal(text, onStatus){
     it.chunkParas = chunks[ci].paras || 1;
     it.chunkReliable = w[ci] >= MIN_CHUNK_WORDS;
     it.chunkIsolated = it.chunkReliable && it.chunkParas === 1;
-    it.reasons = [ MODELS[0].name+': '+Math.round(s.per[0]*100)+'% AI',
-                   MODELS[1].name+': '+Math.round(s.per[1]*100)+'% AI' ];
+    it.reasons = [ MODELS[0].name+': '+Math.round(s.per[0]*100)+'% AI' ];
     if(!it.chunkReliable) it.reasons.push('section is only '+w[ci]+' words — too short to score reliably');
     else if(it.chunkParas > 1) it.reasons.push('scored together with '+(it.chunkParas-1)+' adjacent paragraph'+(it.chunkParas>2?'s':'')+' — too short to score alone');
-    if(Math.abs(s.per[0]-s.per[1])>0.4) it.reasons.push('models disagree — treat with caution');
-    it.para = Math.abs(s.per[0]-s.per[1])>0.4 && it.p>=0.5;
+    // Single model now — no second reading to disagree with, so this is
+    // always false. Left in place (rather than deleted) since renderScan
+    // still branches on it; a future second model could revive it.
+    it.para = false;
     if(it.p>=0.5){ flagged++; flaggedWords += it.n; }
   }
 
@@ -4025,15 +4036,15 @@ async function analyzeLocal(text, onStatus){
   var sig2 = computeStatStyloSignals(text, allWords, sentenceLens, paragraphs, openers);
 
   var combined = DetectorCore.combineSignals(docP, sig2.statisticalP, sig2.stylometricP, {
-    wordCount: total, modelsAgree: modelsAgree, chunkReliableFraction: reliableChunkFraction
+    wordCount: total, modelsAgree: null, chunkReliableFraction: reliableChunkFraction
   });
 
   var paragraphReport = computeParagraphReport(text, chunks, chunkPs, chunkReliableFlags, chunkParaCounts);
 
   // ---- explainability: which signals pushed the score, and what limits it ----
   var primarySignals = [], limitations = [];
-  if(docP>=0.6) primarySignals.push('Transformer classifiers read most passages as AI-typical ('+Math.round(docP*100)+'% average)');
-  if(docP<0.4) primarySignals.push('Transformer classifiers read most passages as human-typical ('+Math.round((1-docP)*100)+'% human-range)');
+  if(docP>=0.6) primarySignals.push('The transformer classifier reads most passages as AI-typical ('+Math.round(docP*100)+'% average)');
+  if(docP<0.4) primarySignals.push('The transformer classifier reads most passages as human-typical ('+Math.round((1-docP)*100)+'% human-range)');
   if(sig2.detail.burst.uniformity>0.6) primarySignals.push('Sentence lengths are unusually uniform (low burstiness)');
   if(sig2.detail.burst.uniformity<0.3) primarySignals.push('Sentence lengths vary naturally (human-typical burstiness)');
   if(sig2.detail.vocab.diversityDeficit>0.55) primarySignals.push('Vocabulary is more repetitive than typical writing');
@@ -4044,7 +4055,7 @@ async function analyzeLocal(text, onStatus){
   if(!primarySignals.length) primarySignals.push('No single signal dominates — this is a blend of small effects');
 
   if(combined.wordCountTier!=='standard') limitations.push('Document is on the short side, which lowers confidence for any detector');
-  if(modelGap>0.3) limitations.push('The two transformer models disagree with each other on parts of this text');
+  limitations.push('Scored by a single transformer model — no second model to cross-check disagreement against, unlike the two-model setup this project used to run');
   if(paragraphs.length<2) limitations.push('Single paragraph — no cross-paragraph consistency check was possible');
   if(reliableChunkFraction<1) limitations.push('One or more sections were too short to score independently and were grouped with neighbors');
   limitations.push('This is a statistical estimate, not proof of AI use — treat it as one input among several');
@@ -4052,7 +4063,7 @@ async function analyzeLocal(text, onStatus){
   return {
     engine:'local', items:items, total:total, segments:items.length, flagged:flagged,
     pct: Math.round(combined.probability*100),
-    docP: docP, perModel: [mean(dPer0), mean(dPer1)],
+    docP: docP,
     windows: chunks.length,
     perp: clamp(docP,0,1), burst: clamp(docP,0,1),
     pat: clamp(mean(dPer0),0,1), human: clamp(1-docP,0,1),
@@ -6389,7 +6400,7 @@ function refreshEngine(){
   var d=$('engineDot'), t=$('engineTxt');
   if(MODEL_STATE.status==='ready'){
     d.className='dot ok';
-    t.innerHTML='<b>Detector ready</b> &mdash; two models running locally in your browser. Nothing is uploaded and there is no per-scan cost.';
+    t.innerHTML='<b>Detector ready</b> &mdash; running locally in your browser. Nothing is uploaded and there is no per-scan cost.';
   } else if(MODEL_STATE.status==='loading'){
     d.className='dot warn';
     t.innerHTML='<span class="spin"></span>'+esc(MODEL_STATE.msg||'Loading models...');
@@ -6398,7 +6409,7 @@ function refreshEngine(){
     t.innerHTML='<b>Model load failed:</b> '+esc(MODEL_STATE.msg)+' &mdash; needs internet on first run.';
   } else {
     d.className='dot warn';
-    t.innerHTML='Two detector models (~120MB) download on your first scan, then stay cached. No key, no account, no setup.';
+    t.innerHTML='A detector model downloads on your first scan, then stays cached. No key, no account, no setup.';
   }
 }
 function setStatus(msg){ MODEL_STATE.msg=msg; refreshEngine(); }
@@ -6540,25 +6551,29 @@ function renderScan(text, r){
                '<span class="chip">Segments <b>'+r.segments+'</b></span>'+
                '<span class="chip">Flagged <b>'+r.flagged+'</b></span>';
   if(r.engine==='local'){
-    $('lPerp').textContent  = 'Combined AI probability';
-    $('lBurst').textContent = MODELS[0].name;
-    $('lPat').textContent   = MODELS[1].name;
+    // Only one transformer model now, so the second metric slot (previously
+    // a second model's score) is repurposed to actually show the statistical
+    // and stylometric layers that were always part of the combined score but
+    // never had their own box — "use the rest of what's already computed"
+    // rather than leaving a slot showing a duplicate of the first number.
+    var statP = r.combined ? r.combined.componentScores.statistical : 0;
+    var styloP = r.combined ? r.combined.componentScores.stylometric : 0;
+    $('lPerp').textContent  = MODELS[0].name;
+    $('lBurst').textContent = 'Statistical signals';
+    $('lPat').textContent   = 'Stylometric signals';
     $('lHum').textContent   = 'Human-range signal';
     $('mPerp').textContent  = Math.round(r.docP*100)+'%';
-    $('mBurst').textContent = Math.round(r.perModel[0]*100)+'%';
-    $('mPat').textContent   = Math.round(r.perModel[1]*100)+'%';
+    $('mBurst').textContent = Math.round(statP*100)+'%';
+    $('mPat').textContent   = Math.round(styloP*100)+'%';
     $('mHum').textContent   = Math.round((1-r.docP)*100)+'%';
     $('bPerp').style.width  = (r.docP*100)+'%';
-    $('bBurst').style.width = (r.perModel[0]*100)+'%';
-    $('bPat').style.width   = (r.perModel[1]*100)+'%';
+    $('bBurst').style.width = (statP*100)+'%';
+    $('bPat').style.width   = (styloP*100)+'%';
     $('bHum').style.width   = ((1-r.docP)*100)+'%';
-    var gap = Math.abs(r.perModel[0]-r.perModel[1]);
     $('chips').innerHTML = common+
-      '<span class="chip">Document score <b>'+Math.round(r.docP*100)+'%</b></span>'+
-      '<span class="chip">'+esc(MODELS[0].name)+' <b>'+Math.round(r.perModel[0]*100)+'%</b></span>'+
-      '<span class="chip">'+esc(MODELS[1].name)+' <b>'+Math.round(r.perModel[1]*100)+'%</b></span>'+
-      (gap>0.4 ? '<span class="chip bad-txt">Models disagree by '+Math.round(gap*100)+'pts &mdash; low confidence</span>'
-               : '<span class="chip ok-txt">Models agree</span>')+
+      '<span class="chip">'+esc(MODELS[0].name)+' <b>'+Math.round(r.docP*100)+'%</b></span>'+
+      '<span class="chip">Statistical layer <b>'+Math.round(statP*100)+'%</b></span>'+
+      '<span class="chip">Stylometric layer <b>'+Math.round(styloP*100)+'%</b></span>'+
       '<span class="chip">Runs locally <b>no upload</b></span>';
   } else {
     $('lPerp').textContent  = 'Predictability — weak proxy';
@@ -6839,7 +6854,7 @@ async function runHumanize(){
     '<span class="chip">Passive &rarr; active <b>'+totals.passive+'</b></span>'+
     '<span class="chip">Openers varied <b>'+totals.openers+'</b></span>'+
     (MODEL_STATE.status==='ready'
-       ? '<span class="chip">Scored by '+MODELS.length+' detector models</span>'
+       ? '<span class="chip">Scored by '+MODELS.length+' detector model'+(MODELS.length===1?'':'s')+'</span>'
        : '<span class="chip bad-txt">Detector unavailable &mdash; rewrote everything</span>');
   $('btnHum').disabled = false; $('btnReroll').disabled = false;
 

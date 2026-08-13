@@ -6,14 +6,24 @@ than are made here. Read it before trusting or defending a specific score.
 
 ## Two-tier design
 
-**Primary path (`analyzeLocal()` in index.html):** two ONNX transformer
-classifiers run client-side in a Web Worker —
+**Primary path (`analyzeLocal()` in index.html):** one ONNX transformer
+classifier runs client-side in a Web Worker —
 [`tmr-ai-text-detector-ONNX`](https://huggingface.co/onnx-community/tmr-ai-text-detector-ONNX)
-(RAID-trained across 11 LLM architectures, weight 0.75) and `e5-small-lora`
-(weight 0.25, recentered onto its own observed decision point — see the code
-comment at `recentre()`). This is the only component in the system actually
-trained on labeled AI/human text. Everything else is a statistical or
-stylometric heuristic layered around it.
+(RAID-trained across 11 LLM architectures, weight 1.0). This is the only
+component in the system actually trained on labeled AI/human text.
+Everything else is a statistical or stylometric heuristic layered around it.
+
+Used to be two models blended together — `tmr-ai-text-detector` plus
+`e5-small-lora` at a 75/25 weight. Dropped `e5-small-lora`: on this
+project's own held-out set it caught 1 of 4 AI samples solo against tmr's
+3 of 4, while carrying a quarter of the blend weight. It wasn't free —
+see "The one miss" below for the specific case where blending it in
+actually helped — but the net effect across the eval set was more noise
+than signal, and a "models disagree" flag that fires on a single classifier
+that's occasionally wrong is a worse UX than just showing the one number
+plainly. `MODELS` in index.html is still an array; the worker and
+`scoreMany()` loop over it generically, so re-adding a second model later
+is a one-line change, not a rewrite.
 
 **Offline fallback (`analyze()`):** used only when the transformer models
 can't be downloaded (no internet on first run). Weaker by construction and
@@ -26,7 +36,7 @@ average alone. It's a weighted combination of three independent layers:
 
 | Layer | What it measures | Weight in final logit | Trained on labeled data? |
 |---|---|---|---|
-| Transformer ensemble | Learned AI/human token patterns | ~65% | Yes (upstream, RAID + others) |
+| Transformer (tmr-ai-text-detector) | Learned AI/human token patterns | ~65% | Yes (upstream, RAID + others) |
 | Statistical | Burstiness, vocabulary diversity, self-repetition, perplexity-proxy register | ~25% | No — hand-set thresholds |
 | Stylometric | Function-word evenness, discourse-marker density, sentence-opener repetition, Markdown listicle density | ~10% | No — hand-set thresholds |
 
@@ -47,9 +57,10 @@ computed by `combineSignals` in either path.
 Every result now carries a **category** (`insufficient` / `likely_human` /
 `probably_human` / `uncertain` / `probably_ai` / `likely_ai`) and a separate
 **confidence score (5–95%, never 0 or 100)**. Confidence is reduced by:
-short documents, disagreement between the two transformer models,
-disagreement between the transformer and statistical layers, and a high
-fraction of chunks too short to score independently. See
+short documents, disagreement between the transformer and statistical
+layers, and a high fraction of chunks too short to score independently.
+(Used to also factor in disagreement between two transformer models —
+gone along with the second model, see "Two-tier design" above.) See
 `combineSignals()` in `detector-core.js` for the exact arithmetic.
 
 ## Word-count gating
@@ -115,28 +126,42 @@ the actual text, not guessed at. Three real, compounding bugs, all now fixed:
    themselves, and the untouched original is still what every other signal
    (including `markdownListicleDensity`, which needs the raw syntax) reads.
 
-**Measured effect, live, same document, real models:** the transformer's own
+**Measured effect, live, same document, real models — measured while the
+project still ran two transformer models (see "Two-tier design" above for
+why it's since down to one; the figures below predate that change and are
+left as originally recorded rather than restated):** the transformer's own
 document score (`docP`) went from confused/low to **68%**, with the primary
 model (`tmr-ai-text-detector`) alone reading **86%**. Combined score went
 from the reported 24% to **52%** — correctly landing on `uncertain` rather
-than a false `probably_human`, because the two transformer models now
-honestly disagree (86% vs. 19%) on this text rather than both reading it
-through a Markdown-shaped blind spot. That disagreement is reported
-verbatim in the UI ("Models disagree by 67pts — low confidence"), not
-smoothed over.
+than a false `probably_human`, because the two transformer models
+disagreed (86% vs. 19%) on this text rather than both reading it through a
+Markdown-shaped blind spot.
 
-**What this doesn't fix:** the secondary model (`e5-small-lora`) still reads
-19% on this document even with clean input — it may just be weaker on this
-register/genre, which the combination formula already accounts for via
-`modelsAgree`. And this remains a heuristic, same caveat as everything else
-in this file: `markdownListicleDensity`'s thresholds are hand-set from one
-real example, not fitted against a labeled corpus of Markdown-formatted AI
-text (none exists in this project) — expect it to need recalibration as
-more real cases are seen.
+**What this doesn't fix:** `markdownListicleDensity`'s thresholds are
+hand-set from one real example, not fitted against a labeled corpus of
+Markdown-formatted AI text (none exists in this project) — expect it to
+need recalibration as more real cases are seen.
+
+### A follow-on bug this fix didn't catch: fenced code blocks crashed the worker
+
+The same essay, resubmitted with its actual fenced code blocks (\`\`\`...\`\`\`
+wrapping ASCII-art diagrams) intact, still scored ~21% — the fix above
+never ran. `stripMarkdownForScoring()` didn't touch fenced blocks, so the
+tokenizer was fed dozens of repeated `+---+` box-drawing lines. That didn't
+just score wrong, it threw inside the ONNX worker (an opaque numeric
+error message, no readable text). `runScan()`'s try/catch silently falls
+back to the much weaker offline heuristic engine on any `analyzeLocal()`
+failure — so the crash was invisible in the UI; a bad score looked
+identical to a crash. Fixed by having `stripMarkdownForScoring()` also drop
+box-drawing lines inside fenced blocks (keeping lines that are mostly real
+words — diagram labels like "Whale Locates Dense Krill Swarm" survive as
+legitimate short prose). Verified on the exact real essay, real models: no
+crash, `analyzeLocal()` completes, docP 81%, primary model 98%, combined
+66% ("Probably AI-generated").
 
 ## What was evaluated, and what wasn't
 
-`tests/detector-core.test.js` — 22 unit tests on the pure functions in
+`tests/detector-core.test.js` — 25 unit tests on the pure functions in
 `detector-core.js` (burstiness direction, vocab diversity bounds, category
 thresholds, confidence floor/ceiling, monotonicity). Run: `node
 tests/detector-core.test.js`.
@@ -158,7 +183,13 @@ replace it. If it ever scored highly *on its own*, that would actually be a
 red flag that it had drifted toward keying on something spurious.
 
 **Full-pipeline (transformer + statistical + stylometric) manual evaluation,
-2026-08-09:** `tests/detector-testset.json` now holds 37 items — the original
+2026-08-09 — NOTE: recorded under the two-model setup, since removed (see
+"Two-tier design" above). `fullPipelineDocP` below reflects tmr+e5 blended
+at 75/25, not the current tmr-only `docP`. Not re-run against the
+single-model pipeline yet — flagging that gap honestly rather than
+re-stating these numbers as still-current. The one specific case this
+matters most for is called out below.**
+`tests/detector-testset.json` now holds 37 items — the original
 12, plus 25 more (10 AI, 15 human, including 5 written specifically to stress
 casual/informal register: text-speak, forum posts, rant-y first-person). The
 25 new items carry a `fullPipelineDocP` field recorded from a real run of
@@ -185,6 +216,12 @@ this specific passage, not a systematic weakness of informal writing that a
 weight change would reliably fix. Changing the 75/25 blend to chase a single
 failing example risks degrading the 24 cases that are currently correct —
 that tradeoff was not made without more evidence than one document.
+
+Post-model-removal note: this is the one case where dropping `e5-small-lora`
+has a known, predictable cost. With tmr running alone, this passage should
+now score close to tmr's raw 94% instead of the blended 71% — a bigger miss
+than before, not a smaller one, on this specific document. Worth watching
+for if more casual/informal false positives like it turn up.
 
 **What this project has still not done, and cannot honestly claim:** a
 large-scale ROC-AUC/precision-recall study across thousands of documents,
