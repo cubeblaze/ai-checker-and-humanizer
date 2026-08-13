@@ -2402,6 +2402,75 @@ function fixCaps(s){
 }
 function wordCount(s){ return words(s).length; }
 
+/* Paragraph splitting normally means "blocks separated by a blank line" —
+   the convention this project's own detector signals were written assuming.
+   But a lot of real pasted text (chat-UI output, Word/Docs copy-paste, raw
+   Markdown headings and bullet lists) uses a single newline between blocks
+   instead of a blank line. Splitting only on blank lines then collapses an
+   entire multi-section document into ONE "paragraph" — which silently
+   disables both the discourse-marker-density and paragraph-consistency
+   detector signals (both require >=2 paragraphs to run at all) on exactly
+   the heavily-sectioned, heading-and-bullet-heavy text those signals exist
+   to catch. Confirmed live: a 1,234-word AI-generated essay with headers,
+   bullet lists and "Furthermore/However"-style transitions at nearly every
+   section collapsed to numParagraphs=1, so discourse-marker-density silently
+   read as unreliable/0 instead of flagging the pattern. Falls back to
+   splitting on any newline run only when the blank-line split found
+   essentially nothing AND the document is long enough that "this really is
+   one paragraph" is implausible — short single-paragraph answers are left
+   alone. */
+/* Strips pure Markdown decoration — headers, bold/italic markers, bullet and
+   numbered-list markers, table pipes, horizontal rules — before handing text
+   to the transformer classifiers. Those models were trained on plain prose
+   (RAID etc.), not Markdown source; feeding them raw "**Term:** explanation"
+   syntax is input their training never covered at all, not just unusual
+   input. That's a real, testable candidate for why a heavily-formatted AI
+   document can score confidently human from the transformer: it isn't
+   reading confused text as human-like, it may be reading text it was never
+   trained to interpret in the first place. This never removes or reorders
+   words — only decoration — so it can't invent or hide content; the
+   ORIGINAL text (with formatting intact) is still what markdownListicleDensity
+   and every other signal reads. Only the transformer's own input is touched. */
+function stripMarkdownForScoring(text){
+  return text
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1$2')
+    .replace(/^[ \t]*[-*+]\s+/gm, '')
+    .replace(/^[ \t]*\d+\.\s+/gm, '')
+    .replace(/\|/g, ' ')
+    .replace(/^-{3,}\s*$/gm, '');
+}
+
+function splitParagraphs(text){
+  var byBlank = text.split(/\n\s*\n/).map(function(p){ return p.trim(); }).filter(Boolean);
+  if(byBlank.length <= 1 && wordCount(text) > 150){
+    var byLine = text.split(/\n+/).map(function(p){ return p.trim(); }).filter(Boolean);
+    if(byLine.length > 1) return byLine;
+  }
+  return byBlank;
+}
+
+/* Offset-preserving counterpart to splitParagraphs() above, for the two call
+   sites that need to slice the original text by paragraph rather than just
+   read paragraph text: chunking for the transformer models (chunkForAnalysis)
+   and the mixed-authorship paragraph report (computeParagraphReport). Same
+   blank-line-first, single-newline-fallback logic and the same reason for it. */
+function splitParagraphSpans(text){
+  function spansOn(re){
+    var m, last=0, spans=[];
+    while((m = re.exec(text)) !== null){ spans.push({start:last, end:m.index}); last = re.lastIndex; }
+    spans.push({start:last, end:text.length});
+    return spans.filter(function(s){ return text.slice(s.start,s.end).trim(); });
+  }
+  var byBlank = spansOn(/\n\s*\n/g);
+  if(byBlank.length <= 1 && wordCount(text) > 150){
+    var byLine = spansOn(/\n+/g);
+    if(byLine.length > 1) return byLine;
+  }
+  return byBlank;
+}
+
 function syllables(w){
   w=w.toLowerCase().replace(/[^a-z]/g,'');
   if(w.length<=3) return 1;
@@ -2867,7 +2936,7 @@ function analyze(text){
 
   // ---- headline number: multi-signal combination, no transformer available ----
   var sentenceLens2 = items.map(function(it){ return it.n; });
-  var paragraphs2 = text.split(/\n\s*\n/).map(function(p){return p.trim();}).filter(Boolean);
+  var paragraphs2 = splitParagraphs(text);
   var sig2b = computeStatStyloSignals(text, allW, sentenceLens2, paragraphs2, openers);
   var combined = DetectorCore.combineSignals(null, sig2b.statisticalP, sig2b.stylometricP, {
     wordCount: total, modelsAgree: null, chunkReliableFraction: paragraphs2.length ? 1 : 0
@@ -3757,10 +3826,7 @@ function chunkBySentence(text, maxChars){
 var MIN_CHUNK_WORDS = 120;
 
 function chunkForAnalysis(text, maxChars){
-  var re = /\n\s*\n/g, m, last = 0, paras = [];
-  while((m = re.exec(text)) !== null){ paras.push({start:last, end:m.index}); last = re.lastIndex; }
-  paras.push({start:last, end:text.length});
-  paras = paras.filter(function(p){ return text.slice(p.start,p.end).trim(); });
+  var paras = splitParagraphSpans(text);
   if(!paras.length) return [];
 
   function words(c){ return wordCount(text.slice(c.start, c.end)); }
@@ -3843,11 +3909,16 @@ function computeStatStyloSignals(text, allWords, sentenceLens, paragraphs, opene
   var fw = D.functionWordProfile(allWords);
   var openerStat = D.openerRepetition(openers);
   var discourse = D.discourseMarkerDensity(paragraphs);
-  var stylometricP = clamp(0.5*fw.score + 0.3*openerStat.score + 0.2*discourse.score, 0, 1);
+  // Structural signal, not a content one — operates on the raw text (before
+  // words() strips **/# markdown punctuation) since that's the only place
+  // this pattern is visible at all. See the function's own doc comment for
+  // the real essay that motivated adding it.
+  var md = D.markdownListicleDensity(text, allWords.length);
+  var stylometricP = clamp(0.42*fw.score + 0.25*openerStat.score + 0.18*discourse.score + 0.15*md.score, 0, 1);
 
   return {
     statisticalP: statisticalP, stylometricP: stylometricP,
-    detail: { burst:burst, vocab:vocab, rep:rep, uElev:uElev, fw:fw, openerStat:openerStat, discourse:discourse, docSurp:docSurp }
+    detail: { burst:burst, vocab:vocab, rep:rep, uElev:uElev, fw:fw, openerStat:openerStat, discourse:discourse, md:md, docSurp:docSurp }
   };
 }
 
@@ -3856,10 +3927,7 @@ function computeStatStyloSignals(text, allWords, sentenceLens, paragraphs, opene
    when a paragraph was too short to be scored on its own it says so
    explicitly rather than inheriting a merged neighbor's score silently. */
 function computeParagraphReport(text, chunks, chunkPs, chunkReliableFlags, chunkParaCounts){
-  var re = /\n\s*\n/g, m, last=0, spans=[];
-  while((m = re.exec(text)) !== null){ spans.push({start:last, end:m.index}); last = re.lastIndex; }
-  spans.push({start:last, end:text.length});
-  spans = spans.filter(function(s){ return text.slice(s.start,s.end).trim(); });
+  var spans = splitParagraphSpans(text);
 
   var out = [], ci = 0;
   for(var i=0;i<spans.length;i++){
@@ -3890,7 +3958,7 @@ async function analyzeLocal(text, onStatus){
 
   var chunkChars = Math.max(CHUNK_CHARS, Math.ceil(text.length / MAX_CHUNKS));
   var chunks = chunkForAnalysis(text, chunkChars).filter(function(c){ return text.slice(c.start,c.end).trim(); });
-  var chunkTexts = chunks.map(function(c){ return text.slice(c.start,c.end); });
+  var chunkTexts = chunks.map(function(c){ return stripMarkdownForScoring(text.slice(c.start,c.end)); });
 
   if(onStatus) onStatus('Scoring '+chunks.length+' passage'+(chunks.length===1?'':'s')+'...');
   var scores = await scoreMany(chunkTexts, function(done,total){
@@ -3935,7 +4003,7 @@ async function analyzeLocal(text, onStatus){
   // ---- multi-signal document-level combination (not the transformer score alone) ----
   var allWords = words(text);
   var sentenceLens = items.map(function(it){ return it.n; });
-  var paragraphs = text.split(/\n\s*\n/).map(function(p){return p.trim();}).filter(Boolean);
+  var paragraphs = splitParagraphs(text);
   var openers = {}; items.forEach(function(it){ var op = words(it.raw)[0]; if(op) openers[op]=(openers[op]||0)+1; });
   var sig2 = computeStatStyloSignals(text, allWords, sentenceLens, paragraphs, openers);
 
@@ -3955,6 +4023,7 @@ async function analyzeLocal(text, onStatus){
   if(sig2.detail.rep.score>0.4) primarySignals.push('Noticeable reuse of the same short phrases');
   if(sig2.detail.fw.reliable && sig2.detail.fw.score>0.5) primarySignals.push('Function-word usage is unusually even/predictable');
   if(sig2.detail.discourse.reliable && sig2.detail.discourse.score>0.4) primarySignals.push('Heavy, mechanical use of transition words at paragraph starts');
+  if(sig2.detail.md.score>0.4) primarySignals.push('Heavy use of bolded lead-in terms and headers — a common AI "listicle" structuring pattern');
   if(!primarySignals.length) primarySignals.push('No single signal dominates — this is a blend of small effects');
 
   if(combined.wordCountTier!=='standard') limitations.push('Document is on the short side, which lowers confidence for any detector');
@@ -4023,7 +4092,7 @@ function countSyllables(word){
 }
 
 function waParagraphs(text){
-  return text.split(/\n\s*\n/).map(function(p){ return p.trim(); }).filter(Boolean);
+  return splitParagraphs(text);
 }
 
 function waScoreColor(score){ return score>=75?'good':(score>=50?'mid':'bad'); }

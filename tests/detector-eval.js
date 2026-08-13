@@ -32,12 +32,25 @@ function splitSentences(text) {
   // simplified: split on sentence-ending punctuation followed by whitespace
   return text.split(/(?<=[.!?])\s+/).filter(function (s) { return s.trim(); });
 }
+// mirrors index.html's splitParagraphs(): blank-line paragraphs first, but
+// fall back to single-newline splitting when that collapses a long document
+// to ~1 paragraph (common with pasted chat/Markdown output using single
+// newlines between blocks) — otherwise discourseMarkerDensity silently goes
+// dark on exactly the heading/bullet-heavy text it exists to catch.
+function splitParagraphs(text) {
+  var byBlank = text.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+  if (byBlank.length <= 1 && words(text).length > 150) {
+    var byLine = text.split(/\n+/).map(function (p) { return p.trim(); }).filter(Boolean);
+    if (byLine.length > 1) return byLine;
+  }
+  return byBlank;
+}
 
 function runStatStyloOnly(text) {
   var allWords = words(text);
   var sentences = splitSentences(text);
   var sentenceLens = sentences.map(function (s) { return words(s).length; }).filter(function (n) { return n > 0; });
-  var paragraphs = text.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+  var paragraphs = splitParagraphs(text);
   var openers = {};
   sentences.forEach(function (s) { var w = words(s)[0]; if (w) openers[w] = (openers[w] || 0) + 1; });
 
@@ -47,9 +60,10 @@ function runStatStyloOnly(text) {
   var fw = DetectorCore.functionWordProfile(allWords);
   var openerStat = DetectorCore.openerRepetition(openers);
   var discourse = DetectorCore.discourseMarkerDensity(paragraphs);
+  var md = DetectorCore.markdownListicleDensity(text, allWords.length);
 
   var statisticalP = DetectorCore.clamp(0.34 * burst.uniformity + 0.24 * vocab.diversityDeficit + 0.22 * rep.score + 0.20 * 0.3, 0, 1);
-  var stylometricP = DetectorCore.clamp(0.5 * fw.score + 0.3 * openerStat.score + 0.2 * discourse.score, 0, 1);
+  var stylometricP = DetectorCore.clamp(0.42 * fw.score + 0.25 * openerStat.score + 0.18 * discourse.score + 0.15 * md.score, 0, 1);
 
   return DetectorCore.combineSignals(null, statisticalP, stylometricP, {
     wordCount: allWords.length, modelsAgree: null, chunkReliableFraction: paragraphs.length ? 1 : 0

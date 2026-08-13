@@ -206,7 +206,43 @@
   }
 
   // ---------------------------------------------------------------
-  // Signal 7: within-document paragraph consistency (style-shift check)
+  // Signal 7: Markdown "listicle" structure density
+  // ---------------------------------------------------------------
+  /**
+   * Counts a specific, very mechanical formatting pattern: a bolded lead-in
+   * term immediately followed by a colon ("**Cardiac Architecture:** A blue
+   * whale's heart..."), used as the organizing device for section after
+   * section, plus heading density (#, ##, ###...). Found this gap directly:
+   * a real 1,234-word AI-generated essay (headers, bullet lists, this exact
+   * bold-lead-in pattern used 11 times) scored only ~24% AI overall despite
+   * every other signal being neutral-to-low, because NOTHING in this file
+   * looks at raw formatting — words() strips all markdown punctuation before
+   * any other signal ever sees it, so a document could be "**Term:**"
+   * structured throughout and every existing signal would be blind to it.
+   * A human writing a genuine glossary or definition list might use this
+   * pattern once or twice; using it as the load-bearing structure for most
+   * of a document is a distinctly LLM "comprehensive breakdown" habit.
+   * HEURISTIC, NOT FITTED — same caveat as every hand-set threshold in this
+   * file; this one is newer than the others and correspondingly more likely
+   * to need recalibration once more real examples are seen.
+   *
+   * @param {string} text       the raw, unstripped document text
+   * @param {number} wordCount  precomputed word count (this file has no
+   *                            tokenizer of its own for markdown-bearing text)
+   */
+  function markdownListicleDensity(text, wordCountN) {
+    var boldLeadIns = (text.match(/\*\*[^*\n]{2,60}:\*\*/g) || []).length;
+    var headers = (text.match(/^#{1,6}\s/gm) || []).length;
+    var n = wordCountN > 0 ? wordCountN : 1;
+    var perFiveHundred = (boldLeadIns + headers * 0.5) / n * 500;
+    return {
+      boldLeadIns: boldLeadIns, headers: headers, perFiveHundred: perFiveHundred,
+      score: clamp(perFiveHundred / 4, 0, 1)
+    };
+  }
+
+  // ---------------------------------------------------------------
+  // Signal 8: within-document paragraph consistency (style-shift check)
   // ---------------------------------------------------------------
   /**
    * Takes an array of per-paragraph stat objects ({ ttr, meanSentLen }) and
@@ -347,6 +383,7 @@
     functionWordProfile: functionWordProfile,
     openerRepetition: openerRepetition,
     discourseMarkerDensity: discourseMarkerDensity,
+    markdownListicleDensity: markdownListicleDensity,
     paragraphConsistency: paragraphConsistency,
     wordCountTier: wordCountTier,
     combineSignals: combineSignals,

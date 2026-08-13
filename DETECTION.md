@@ -28,7 +28,7 @@ average alone. It's a weighted combination of three independent layers:
 |---|---|---|---|
 | Transformer ensemble | Learned AI/human token patterns | ~65% | Yes (upstream, RAID + others) |
 | Statistical | Burstiness, vocabulary diversity, self-repetition, perplexity-proxy register | ~25% | No — hand-set thresholds |
-| Stylometric | Function-word evenness, discourse-marker density, sentence-opener repetition | ~10% | No — hand-set thresholds |
+| Stylometric | Function-word evenness, discourse-marker density, sentence-opener repetition, Markdown listicle density | ~10% | No — hand-set thresholds |
 
 Combination is a **weighted average in logit space**
 (`DetectorCore.combineSignals`), not `average(scores)` — see the function's
@@ -74,6 +74,65 @@ every real paragraph back to the chunk that scored it, and reports
 `merged` / `too short to score alone` flag when a paragraph wasn't long
 enough to be judged independently, rather than silently inheriting a
 neighbor's score.
+
+## Markdown-formatted text — a real false negative, found and fixed
+
+A user reported a 1,234-word, clearly AI-generated essay (Markdown headers,
+bold "**Term:**"-style lead-ins organizing bullet after bullet, numbered
+lists) scoring only ~24% — "probably human." Traced live in-browser against
+the actual text, not guessed at. Three real, compounding bugs, all now fixed:
+
+1. **Paragraph splitting collapsed the whole document to one paragraph.**
+   `text.split(/\n\s*\n/)` only recognizes blank-line-separated blocks, but
+   this text (like a lot of real pasted content — chat-UI output, Word/Docs
+   copy-paste, raw Markdown) used single newlines between sections. Result:
+   `numParagraphs === 1`, which silently disables `discourseMarkerDensity`
+   and `paragraphConsistency` (both require ≥2 paragraphs to run at all) —
+   exactly the signals meant to catch this kind of heavily-sectioned text.
+   Fixed with `splitParagraphs()`/`splitParagraphSpans()` in index.html
+   (mirrored in `tests/detector-eval.js`): try the blank-line split first,
+   fall back to single-newline splitting only when that collapses to ~1
+   paragraph on a long document.
+
+2. **No signal could see Markdown structure at all.** `words()` strips every
+   non-letter character before any signal ever looks at the text, so a
+   document that's "**Term:**" bullet after bullet, header after header, was
+   completely invisible to detection — not scored low, just never examined.
+   Added `markdownListicleDensity()`: counts bold-lead-in-then-colon
+   patterns and heading density directly on the raw text, folded into the
+   stylometric layer at a modest weight (0.15).
+
+3. **The transformer itself was being fed raw Markdown syntax.** This was
+   the dominant one — confirmed by actually downloading the models and
+   running the real pipeline, not just reasoning about it. Before fixing
+   this, `chunkTexts` (what gets tokenized and scored by the ONNX models)
+   was a straight slice of the original text, `**`/`#`/`|` and all. Those
+   models are trained on plain prose (RAID etc.), never on Markdown source —
+   feeding them decoration syntax is out-of-distribution input, not just
+   "unusual." Added `stripMarkdownForScoring()`: strips headers, bold/italic
+   markers, bullet/numbered-list markers, table pipes, and horizontal rules
+   before the transformer sees the text — never touches the words
+   themselves, and the untouched original is still what every other signal
+   (including `markdownListicleDensity`, which needs the raw syntax) reads.
+
+**Measured effect, live, same document, real models:** the transformer's own
+document score (`docP`) went from confused/low to **68%**, with the primary
+model (`tmr-ai-text-detector`) alone reading **86%**. Combined score went
+from the reported 24% to **52%** — correctly landing on `uncertain` rather
+than a false `probably_human`, because the two transformer models now
+honestly disagree (86% vs. 19%) on this text rather than both reading it
+through a Markdown-shaped blind spot. That disagreement is reported
+verbatim in the UI ("Models disagree by 67pts — low confidence"), not
+smoothed over.
+
+**What this doesn't fix:** the secondary model (`e5-small-lora`) still reads
+19% on this document even with clean input — it may just be weaker on this
+register/genre, which the combination formula already accounts for via
+`modelsAgree`. And this remains a heuristic, same caveat as everything else
+in this file: `markdownListicleDensity`'s thresholds are hand-set from one
+real example, not fitted against a labeled corpus of Markdown-formatted AI
+text (none exists in this project) — expect it to need recalibration as
+more real cases are seen.
 
 ## What was evaluated, and what wasn't
 

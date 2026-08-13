@@ -68,6 +68,27 @@ test('no repeated trigrams scores zero', function () {
   assert.strictEqual(r.score, 0);
 });
 
+console.log('markdownListicleDensity()');
+test('dense bold-lead-in listicle formatting scores high', function () {
+  // the real case that motivated this signal: a heavily-headered, bold-
+  // lead-in-per-bullet AI essay that every other signal read as neutral
+  var text = '# Title\n## Section\n* **Term One:** explanation of the first term.\n' +
+    '* **Term Two:** explanation of the second term.\n## Another Section\n' +
+    '* **Term Three:** explanation of the third term.\n';
+  var r = DetectorCore.markdownListicleDensity(text, 40);
+  assert.ok(r.score > 0.5, 'expected a high listicle-density score, got ' + r.score);
+});
+test('plain prose with no markdown scores zero', function () {
+  var text = 'This is an ordinary paragraph of prose with no headings or bold lead-in terms at all, just regular sentences written the way people normally write.';
+  var r = DetectorCore.markdownListicleDensity(text, 26);
+  assert.strictEqual(r.score, 0);
+});
+test('a single incidental bold phrase does not trigger it', function () {
+  var text = 'The report found that **overall performance** improved this quarter, which the team was glad to see.';
+  var r = DetectorCore.markdownListicleDensity(text, 18);
+  assert.strictEqual(r.boldLeadIns, 0, 'a bold phrase without a trailing colon should not count as a lead-in');
+});
+
 console.log('wordCountTier()');
 test('under 120 words is insufficient', function () { assert.strictEqual(DetectorCore.wordCountTier(50), 'insufficient'); });
 test('120-259 words is limited', function () { assert.strictEqual(DetectorCore.wordCountTier(200), 'limited'); });
