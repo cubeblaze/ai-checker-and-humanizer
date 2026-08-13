@@ -6,24 +6,56 @@ than are made here. Read it before trusting or defending a specific score.
 
 ## Two-tier design
 
-**Primary path (`analyzeLocal()` in index.html):** one ONNX transformer
-classifier runs client-side in a Web Worker —
+**Primary path (`analyzeLocal()` in index.html):** two ONNX transformer
+classifiers run client-side in a Web Worker —
 [`tmr-ai-text-detector-ONNX`](https://huggingface.co/onnx-community/tmr-ai-text-detector-ONNX)
-(RAID-trained across 11 LLM architectures, weight 1.0). This is the only
-component in the system actually trained on labeled AI/human text.
-Everything else is a statistical or stylometric heuristic layered around it.
+(RAID-trained across 11 LLM architectures, weight 0.65) and
+[`answerdotai-ModernBERT-base-ai-detector-ONNX`](https://huggingface.co/onnx-community/answerdotai-ModernBERT-base-ai-detector-ONNX)
+(DAIGT V2-trained on ChatGPT/Claude/DeepSeek output, weight 0.35). These are
+the only components in the system actually trained on labeled AI/human
+text. Everything else is a statistical or stylometric heuristic layered
+around it.
 
-Used to be two models blended together — `tmr-ai-text-detector` plus
-`e5-small-lora` at a 75/25 weight. Dropped `e5-small-lora`: on this
-project's own held-out set it caught 1 of 4 AI samples solo against tmr's
-3 of 4, while carrying a quarter of the blend weight. It wasn't free —
-see "The one miss" below for the specific case where blending it in
-actually helped — but the net effect across the eval set was more noise
-than signal, and a "models disagree" flag that fires on a single classifier
-that's occasionally wrong is a worse UX than just showing the one number
-plainly. `MODELS` in index.html is still an array; the worker and
-`scoreMany()` loop over it generically, so re-adding a second model later
-is a one-line change, not a rewrite.
+**This pair has changed three times, each time for a specific, tested
+reason — not guessed at:**
+
+1. `chatgpt-detector-roberta` + `e5-small-lora` — rejected. Testing against
+   text written fresh (Claude, unedited — a model this pair was never
+   trained on) showed roberta is trained on ChatGPT output ONLY: it scored
+   every genuine Claude sample under 5% AI regardless of truth. 1/6 correct
+   on that fresh set.
+2. `tmr-ai-text-detector` + `e5-small-lora`, 75/25 — better, but e5 caught
+   only 1 of 4 AI samples solo against tmr's 3 of 4 while carrying a
+   quarter of the weight. Simplified to tmr alone for a while — see "The
+   one miss" below for the specific case that decision made worse, not
+   better, and which the user directly flagged in production ("its just
+   giving a lot of things 94% ai").
+3. `tmr-ai-text-detector` + `answerdotai-ModernBERT-base-ai-detector`,
+   65/35 (current) — went looking for an actual replacement instead of just
+   reverting. Evaluated three real ONNX-ready candidates against this
+   project's full 37-item labeled set, live in a browser, not from
+   model-card claims:
+   - `modernbert-ai-detection-raid-mage-ONNX` (ModernBERT, RAID+MAGE):
+     REJECTED — 65% solo accuracy, only 48% human specificity (13 of 25
+     human samples confidently flagged 80-89% AI). Would have made false
+     positives *more* common, not less.
+   - `answerdotai-ModernBERT-base-ai-detector`: 86% solo accuracy, 100% AI
+     recall, 80% human specificity — and scores the exact known
+     false-positive case (below) at 9% instead of tmr's 94%. Adopted.
+   - `GabeuxDev/ai-text-detector-v1.01-onnx` (desklib DeBERTa-v3-large):
+     not usable — 1.7GB fp32-only (author found int8 quantization shifted
+     probabilities by up to 0.5), needs WebGPU rather than the CPU/WASM q8
+     pipeline this project runs.
+
+   Honest caveat on the winner: its training data covers 3 generator
+   families (ChatGPT, Claude, DeepSeek), not tmr's 11 — weighted below tmr
+   in the blend specifically because of that narrower diversity, despite
+   scoring better on this project's own eval set. The eval set can't prove
+   generalization to generators neither it nor the model has seen.
+
+`MODELS` in index.html is an array; the worker and `scoreMany()` loop over
+it generically — swapping a model in or out is a one/two-line change, not
+a rewrite, which is exactly how this has been iterated three times now.
 
 **Offline fallback (`analyze()`):** used only when the transformer models
 can't be downloaded (no internet on first run). Weaker by construction and
@@ -57,10 +89,9 @@ computed by `combineSignals` in either path.
 Every result now carries a **category** (`insufficient` / `likely_human` /
 `probably_human` / `uncertain` / `probably_ai` / `likely_ai`) and a separate
 **confidence score (5–95%, never 0 or 100)**. Confidence is reduced by:
-short documents, disagreement between the transformer and statistical
-layers, and a high fraction of chunks too short to score independently.
-(Used to also factor in disagreement between two transformer models —
-gone along with the second model, see "Two-tier design" above.) See
+short documents, disagreement between the two transformer models,
+disagreement between the transformer and statistical layers, and a high
+fraction of chunks too short to score independently. See
 `combineSignals()` in `detector-core.js` for the exact arithmetic.
 
 ## Word-count gating
@@ -183,12 +214,13 @@ replace it. If it ever scored highly *on its own*, that would actually be a
 red flag that it had drifted toward keying on something spurious.
 
 **Full-pipeline (transformer + statistical + stylometric) manual evaluation,
-2026-08-09 — NOTE: recorded under the two-model setup, since removed (see
-"Two-tier design" above). `fullPipelineDocP` below reflects tmr+e5 blended
-at 75/25, not the current tmr-only `docP`. Not re-run against the
-single-model pipeline yet — flagging that gap honestly rather than
-re-stating these numbers as still-current. The one specific case this
-matters most for is called out below.**
+2026-08-09 — NOTE: recorded under the original tmr+e5-small-lora setup
+(see "Two-tier design" above for what's changed since — tmr paired with
+`answerdotai-ModernBERT-base-ai-detector` at 65/35, not e5 at 75/25).
+`fullPipelineDocP` below reflects that original blend, not the current
+pair's `docP`. Not re-run in full against the current pipeline — the one
+case that mattered most (the false positive below) was individually
+re-verified live with real models; the other 24 have not been.**
 `tests/detector-testset.json` now holds 37 items — the original
 12, plus 25 more (10 AI, 15 human, including 5 written specifically to stress
 casual/informal register: text-speak, forum posts, rant-y first-person). The
@@ -217,11 +249,19 @@ weight change would reliably fix. Changing the 75/25 blend to chase a single
 failing example risks degrading the 24 cases that are currently correct —
 that tradeoff was not made without more evidence than one document.
 
-Post-model-removal note: this is the one case where dropping `e5-small-lora`
-has a known, predictable cost. With tmr running alone, this passage should
-now score close to tmr's raw 94% instead of the blended 71% — a bigger miss
-than before, not a smaller one, on this specific document. Worth watching
-for if more casual/informal false positives like it turn up.
+**Update — this is now the specific case that motivated adopting
+`answerdotai-ModernBERT-base-ai-detector`.** After `e5-small-lora` was
+dropped (tmr alone), this passage predictably got worse, not better: close
+to tmr's raw 94% instead of the blended 71%, and the user hit this directly
+in production and reported it. Verified live with the real model, this
+exact text, current 65/35 blend: tmr still says 94% (unchanged — it's the
+same model, same known weakness), but `answerdotai-ModernBERT-base-ai-detector`
+says 9%, and the two disagreeing by 85 points is reported honestly rather
+than averaged away — combined result **51%, "Uncertain"**, down from 71%
+and far down from tmr's raw 94%. Not perfect (a genuinely human casual post
+landing on "uncertain" rather than confidently "human" is still a
+real cost), but a clear improvement over both prior states on the one
+concrete failure case this project has actually measured.
 
 **What this project has still not done, and cannot honestly claim:** a
 large-scale ROC-AUC/precision-recall study across thousands of documents,
