@@ -3347,13 +3347,21 @@ function humanize(text, opt){
     // from picking among synonyms, not from skipping words.
     var pVocab = opt.strength===1 ? 0.72 : 1.0;
     var sorted = VOCAB.slice().sort(function(a,b){ return b[0].length-a[0].length; });
+    // Picking independently at each occurrence can land the same synonym for
+    // the same source phrase twice in a row purely by chance — itself a
+    // small predictability tell in a pass whose whole point is unpredictable
+    // word choice. Track the last pick per source phrase and exclude it from
+    // the next draw whenever there's an alternative to draw instead.
+    var vocabLastPick = {};
     sorted.forEach(function(pair){
       var re = new RegExp('\\b'+reEsc(pair[0]).replace(/\\?-/g,'[- ]')+'\\b','gi');
       out = out.replace(re, function(m){
         if(rand()>pVocab) return m;
         var opts = pair[1];
-        var pick = opts[Math.floor(rand()*opts.length)];
+        var choices = opts.length>1 ? opts.filter(function(o){ return o!==vocabLastPick[pair[0]]; }) : opts;
+        var pick = choices[Math.floor(rand()*choices.length)];
         if(pick===undefined) return m;
+        vocabLastPick[pair[0]] = pick;
         if(pick==='') { stats.vocab++; edits++; return ''; }
         stats.vocab++; edits++;
         return matchCase(m, pick);
@@ -3365,10 +3373,14 @@ function humanize(text, opt){
   /* 3. transitions */
   if(opt.trans){
     var pTrans = opt.strength===1 ? 0.7 : 1.0;
+    var transLastPick = {};   // same anti-repeat logic as vocabLastPick above
     TRANSITIONS.forEach(function(t){
       out = out.replace(t[0], function(m){
         if(rand()>pTrans) return m;
-        var opts=t[1]; var pick=opts[Math.floor(rand()*opts.length)];
+        var opts=t[1];
+        var choices = opts.length>1 ? opts.filter(function(o){ return o!==transLastPick[t[0].source]; }) : opts;
+        var pick=choices[Math.floor(rand()*choices.length)];
+        transLastPick[t[0].source] = pick;
         stats.trans++; edits++; return pick;
       });
     });
