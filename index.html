@@ -3680,17 +3680,21 @@ function diffHTML(a, b){
           per the author's own testing), needs WebGPU rather than the
           CPU/WASM q8 pipeline this project runs.
       Honest caveat on the winner: its training data (DAIGT V2 — ChatGPT,
-      Claude, DeepSeek) covers 3 generator families, not tmr's 11. Weighted
-      lower than tmr in the blend (see MODELS below) specifically because
-      of that narrower training diversity, despite scoring better on this
-      project's own eval set — the eval set can't prove it generalizes to
-      generators neither it nor the eval set has seen. Full test transcript
-      and reasoning in DETECTION.md.
+      Claude, DeepSeek) covers 3 generator families, not tmr's 11 — the
+      eval set proves it scores better HERE, not that it generalizes as
+      broadly to generators neither it nor the eval set has ever seen
+      (GPT-5, Gemini, whatever's next). Originally weighted below tmr for
+      exactly that reason. Flipped to 65/35 favoring modernbert-ai-detector
+      per explicit request, after flagging that tradeoff — it now has the
+      deciding vote on disagreement despite the narrower training data,
+      which is a known, accepted cost of this setting, not an oversight.
+      Full test transcript and reasoning in DETECTION.md.
 
    Diversity of TRAINING generators, not which single model you're testing
    against, is what makes a detector generalize to models it has never seen
-   (GPT-5, Gemini, whatever's next) — there's no way to special-case every
-   current model by name. This is exactly why tmr keeps the larger weight.
+   — there's no way to special-case every current model by name. That's
+   still true regardless of which model currently carries more weight in
+   the blend below.
 
    Everything runs in a worker, off the UI thread, so the page stays live and
    can report progress. The first version scored a 3-sentence sliding window
@@ -3700,8 +3704,8 @@ function diffHTML(a, b){
    ============================================================ */
 
 var MODELS = [
-  { id:'onnx-community/tmr-ai-text-detector-ONNX', name:'tmr-ai-text-detector', hot:false, weight:0.65, aiLabel:'ai' },
-  { id:'onnx-community/answerdotai-ModernBERT-base-ai-detector-ONNX', name:'modernbert-ai-detector', hot:false, weight:0.35, aiLabel:'LABEL_1' }
+  { id:'onnx-community/tmr-ai-text-detector-ONNX', name:'tmr-ai-text-detector', hot:false, weight:0.35, aiLabel:'ai' },
+  { id:'onnx-community/answerdotai-ModernBERT-base-ai-detector-ONNX', name:'modernbert-ai-detector', hot:false, weight:0.65, aiLabel:'LABEL_1' }
 ];
 var MODEL_STATE = { status:'idle', msg:'', pct:0 };   // idle | loading | ready | error
 

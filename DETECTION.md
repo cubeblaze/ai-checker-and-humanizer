@@ -9,12 +9,19 @@ than are made here. Read it before trusting or defending a specific score.
 **Primary path (`analyzeLocal()` in index.html):** two ONNX transformer
 classifiers run client-side in a Web Worker —
 [`tmr-ai-text-detector-ONNX`](https://huggingface.co/onnx-community/tmr-ai-text-detector-ONNX)
-(RAID-trained across 11 LLM architectures, weight 0.65) and
+(RAID-trained across 11 LLM architectures, weight 0.35) and
 [`answerdotai-ModernBERT-base-ai-detector-ONNX`](https://huggingface.co/onnx-community/answerdotai-ModernBERT-base-ai-detector-ONNX)
-(DAIGT V2-trained on ChatGPT/Claude/DeepSeek output, weight 0.35). These are
+(DAIGT V2-trained on ChatGPT/Claude/DeepSeek output, weight 0.65). These are
 the only components in the system actually trained on labeled AI/human
 text. Everything else is a statistical or stylometric heuristic layered
 around it.
+
+**Weighting note:** modernbert-ai-detector carries the larger weight by
+explicit request, not because its training data is broader — it isn't
+(3 generator families vs tmr's 11). It scored better on this project's own
+37-item eval set, but that set can't prove it generalizes as well to
+generators neither it nor the eval set has ever seen. Flagged as a known
+tradeoff when the weight was flipped, kept as-is per the ask.
 
 **This pair has changed three times, each time for a specific, tested
 reason — not guessed at:**
@@ -31,10 +38,10 @@ reason — not guessed at:**
    better, and which the user directly flagged in production ("its just
    giving a lot of things 94% ai").
 3. `tmr-ai-text-detector` + `answerdotai-ModernBERT-base-ai-detector`,
-   65/35 (current) — went looking for an actual replacement instead of just
-   reverting. Evaluated three real ONNX-ready candidates against this
-   project's full 37-item labeled set, live in a browser, not from
-   model-card claims:
+   originally 65/35 favoring tmr — went looking for an actual replacement
+   instead of just reverting. Evaluated three real ONNX-ready candidates
+   against this project's full 37-item labeled set, live in a browser, not
+   from model-card claims:
    - `modernbert-ai-detection-raid-mage-ONNX` (ModernBERT, RAID+MAGE):
      REJECTED — 65% solo accuracy, only 48% human specificity (13 of 25
      human samples confidently flagged 80-89% AI). Would have made false
@@ -47,11 +54,14 @@ reason — not guessed at:**
      probabilities by up to 0.5), needs WebGPU rather than the CPU/WASM q8
      pipeline this project runs.
 
-   Honest caveat on the winner: its training data covers 3 generator
-   families (ChatGPT, Claude, DeepSeek), not tmr's 11 — weighted below tmr
-   in the blend specifically because of that narrower diversity, despite
-   scoring better on this project's own eval set. The eval set can't prove
-   generalization to generators neither it nor the model has seen.
+   Weighted below tmr at first specifically because its training data
+   covers only 3 generator families (ChatGPT, Claude, DeepSeek) against
+   tmr's 11, despite scoring better on this project's own eval set — that
+   set can't prove generalization to generators neither it nor the model
+   has seen. **Flipped to 65/35 favoring modernbert-ai-detector per direct
+   request afterward** — that tradeoff (narrower-trained model now has the
+   deciding vote on disagreement) is a known, accepted cost of the current
+   setting, not an oversight.
 
 `MODELS` in index.html is an array; the worker and `scoreMany()` loop over
 it generically — swapping a model in or out is a one/two-line change, not
@@ -216,7 +226,7 @@ red flag that it had drifted toward keying on something spurious.
 **Full-pipeline (transformer + statistical + stylometric) manual evaluation,
 2026-08-09 — NOTE: recorded under the original tmr+e5-small-lora setup
 (see "Two-tier design" above for what's changed since — tmr paired with
-`answerdotai-ModernBERT-base-ai-detector` at 65/35, not e5 at 75/25).
+`answerdotai-ModernBERT-base-ai-detector` at 35/65, not e5 at 75/25).
 `fullPipelineDocP` below reflects that original blend, not the current
 pair's `docP`. Not re-run in full against the current pipeline — the one
 case that mattered most (the false positive below) was individually
@@ -254,14 +264,18 @@ that tradeoff was not made without more evidence than one document.
 dropped (tmr alone), this passage predictably got worse, not better: close
 to tmr's raw 94% instead of the blended 71%, and the user hit this directly
 in production and reported it. Verified live with the real model, this
-exact text, current 65/35 blend: tmr still says 94% (unchanged — it's the
-same model, same known weakness), but `answerdotai-ModernBERT-base-ai-detector`
-says 9%, and the two disagreeing by 85 points is reported honestly rather
-than averaged away — combined result **51%, "Uncertain"**, down from 71%
-and far down from tmr's raw 94%. Not perfect (a genuinely human casual post
-landing on "uncertain" rather than confidently "human" is still a
-real cost), but a clear improvement over both prior states on the one
-concrete failure case this project has actually measured.
+exact text: tmr still says 94% (unchanged — it's the same model, same known
+weakness), but `answerdotai-ModernBERT-base-ai-detector` says 9%, and the
+two disagreeing by 85 points is reported honestly rather than averaged
+away. At the original 65/35-favoring-tmr blend, combined result was
+**51%, "Uncertain"**; after the weight was flipped to 65/35 favoring
+modernbert-ai-detector, the same text now lands at **34%, "Probably
+human-written"** — both are improvements over 71% and far more so over
+tmr's raw 94%, with the flipped weighting giving this specific case the
+best outcome of the three. Not perfect (a genuinely human casual post not
+landing on a confident "human" read is still a real cost), but a clear
+improvement over every prior state on the one concrete failure case this
+project has actually measured.
 
 **What this project has still not done, and cannot honestly claim:** a
 large-scale ROC-AUC/precision-recall study across thousands of documents,
